@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Nueva Competición · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">{{ 'Editar competición' if c else 'Nueva competición' }}</p>
+<h1 class="pag-titulo">{{ c.nombre if c else 'Crear nueva competición' }}</h1>
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Nombre de la competición *</label>
+        <input type="text" name="nombre" required
+               value="{{ c.nombre if c else '' }}"
+               placeholder="Ej: Campeonato Regional Pistola Standard 2026">
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" name="fecha" value="{{ c.fecha if c else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Modalidad</label>
+        <select name="modalidad">
+          {% set mods = ['Pistola Standard','Fuego Central','Pistola Libre','Pistola 9 MM',
+                         'Aire Comprimido','Carabina Ligera','Carabina Match','Mini FClass','Rimfire Producción'] %}
+          {% for m in mods %}
+          <option value="{{ m }}" {{ 'selected' if c and c.modalidad==m }}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-naranja">Crear competición</button>
+      <a href="/competiciones" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

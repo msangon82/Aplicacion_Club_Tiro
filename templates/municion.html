@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% block title %}Control de Munición · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Gestión de munición metálica</p>
+<h1 class="pag-titulo">Control de Munición Metálica</h1>
+
+{% if request.args.get('error') == 'stock' %}
+<div class="alerta alerta-error">⚠ Stock insuficiente para ese calibre. Revisa las existencias antes de registrar la salida.</div>
+{% endif %}
+
+<!-- ── STOCK ACTUAL ── -->
+<p class="pag-etiqueta" style="margin-bottom:14px;">Existencias actuales</p>
+<div class="stock-grid">
+  {% for cal, qty in stocks.items() %}
+  <div class="stock-pill {{ 'bajo' if qty < 50 else '' }}">
+    <div class="cal">{{ cal }}</div>
+    <div class="qty">{{ qty }}</div>
+    <div class="lbl">cartuchos</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── PANELES DE ENTRADA / SALIDA ── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:36px;">
+
+  <!-- Entrada de munición -->
+  <div>
+    <p class="pag-etiqueta" style="margin-bottom:12px;">Entrada de munición</p>
+    <div class="form-card" style="border-left:3px solid var(--verde);">
+      <form method="POST" action="/municion/entrada">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Calibre *</label>
+            <select name="calibre" required>
+              {% for c in calibres %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cantidad *</label>
+            <input type="number" name="cantidad" required min="1" placeholder="Nº cartuchos">
+          </div>
+          <div class="form-group">
+            <label>Fecha *</label>
+            <input type="date" name="fecha" required value="{{ today }}">
+          </div>
+          <div class="form-group">
+            <label>Notas</label>
+            <input type="text" name="notas" placeholder="Proveedor, lote…">
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button type="submit" class="btn btn-verde">＋ Registrar entrada</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Salida de munición -->
+  <div>
+    <p class="pag-etiqueta" style="margin-bottom:12px;">Salida de munición</p>
+    <div class="form-card" style="border-left:3px solid var(--rojo);">
+      <form method="POST" action="/municion/salida">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Calibre *</label>
+            <select name="calibre" required>
+              {% for c in calibres %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cantidad *</label>
+            <input type="number" name="cantidad" required min="1" placeholder="Nº cartuchos">
+          </div>
+          <div class="form-group">
+            <label>Fecha *</label>
+            <input type="date" name="fecha" required value="{{ today }}">
+          </div>
+          <div class="form-group" style="position:relative;">
+            <label>Tirador (opcional)</label>
+            <input
+              type="text"
+              id="buscarTiradorMun"
+              placeholder="Escribe nombre, apellidos o licencia…"
+              autocomplete="off"
+              style="width:100%;"
+            >
+            <div id="listaTiradoresMun" style="
+              display:none;
+              position:absolute;
+              top:100%;left:0;right:0;
+              background:var(--blanco);
+              border:1px solid var(--naranja);
+              border-top:none;
+              max-height:220px;
+              overflow-y:auto;
+              z-index:500;
+              box-shadow:0 4px 12px rgba(0,0,0,.12);
+            "></div>
+            <input type="hidden" name="tirador_id" id="tiradorIdMun">
+            <div id="tiradorSelMun" style="
+              display:none;
+              margin-top:6px;
+              padding:7px 12px;
+              background:var(--naranja-suave);
+              border-left:3px solid var(--naranja);
+              font-size:.84rem;font-weight:500;
+            "></div>
+            <!-- Botón para limpiar la selección -->
+            <button type="button" id="limpiarTiradorMun" onclick="limpiarSelMun()" style="
+              display:none;
+              margin-top:6px;
+              background:none;border:none;
+              font-size:.78rem;color:var(--gris);
+              cursor:pointer;text-decoration:underline;padding:0;
+            ">✕ Quitar tirador</button>
+          </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Notas</label>
+            <input type="text" name="notas" placeholder="Competición, observaciones…">
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+          <button type="submit" class="btn btn-rojo">− Registrar salida</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── TABLA DE MOVIMIENTOS ── -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+  <p class="pag-etiqueta" style="margin-bottom:0;flex:1;">Historial de movimientos</p>
+</div>
+
+<!-- Filtros -->
+<form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;">
+  <div class="form-group" style="flex:1;min-width:180px;">
+    <label>Buscar tirador</label>
+    <input type="text" name="q" value="{{ q }}" placeholder="Nombre, apellidos, licencia…">
+  </div>
+  <div class="form-group" style="min-width:130px;">
+    <label>Calibre</label>
+    <select name="calibre">
+      <option value="">Todos</option>
+      {% for c in calibres %}<option value="{{ c }}" {{ 'selected' if c==calibre_f }}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="form-group" style="min-width:130px;">
+    <label>Tipo</label>
+    <select name="tipo">
+      <option value="">Todos</option>
+      <option value="entrada" {{ 'selected' if tipo_f=='entrada' }}>Entrada</option>
+      <option value="salida"  {{ 'selected' if tipo_f=='salida' }}>Salida</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-negro">Filtrar</button>
+  <a href="/municion" class="btn btn-outline">Limpiar</a>
+</form>
+
+<div class="tabla-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Calibre</th>
+        <th style="text-align:center;">Cantidad</th>
+        <th>Nombre y Apellidos</th>
+        <th>Licencia Federativa</th>
+        <th>Notas</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in movimientos %}
+    <tr>
+      <td style="white-space:nowrap;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;">
+        {{ m.fecha }}
+      </td>
+      <td>
+        <span class="badge badge-{{ m.tipo }}">
+          {{ '↑ Entrada' if m.tipo=='entrada' else '↓ Salida' }}
+        </span>
+      </td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.05em;">
+        {{ m.calibre }}
+      </td>
+      <td class="num" style="text-align:center;font-size:1.05rem;
+          color:{{ 'var(--verde)' if m.tipo=='entrada' else 'var(--rojo)' }};">
+        {{ '+' if m.tipo=='entrada' else '−' }}{{ m.cantidad }}
+      </td>
+      <td>
+        {% if m.nombre %}
+          <strong>{{ m.apellidos }}, {{ m.nombre }}</strong>
+        {% else %}
+          <span style="color:var(--gris);">—</span>
+        {% endif %}
+      </td>
+      <td class="num">{{ m.licencia or '—' }}</td>
+      <td style="font-size:.82rem;color:var(--gris);">{{ m.notas or '—' }}</td>
+      <td>
+        <form method="POST" action="/municion/{{ m.id }}/eliminar"
+              onsubmit="return confirm('¿Eliminar este movimiento? El stock se ajustará automáticamente.')">
+          <button type="submit" class="btn btn-rojo btn-sm">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="8" style="text-align:center;color:var(--gris);padding:28px;">
+        No hay movimientos registrados.
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p style="color:var(--gris);font-size:.8rem;margin-top:8px;">{{ movimientos|length }} movimiento(s) mostrado(s)</p>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TIRADORES_MUN = [
+  {% for t in tiradores %}
+  {
+    id:       {{ t.id }},
+    texto:    "{{ t.apellidos }}, {{ t.nombre }}",
+    licencia: "{{ t.licencia or '' }}",
+    busqueda: "{{ (t.apellidos + ' ' + t.nombre + ' ' + (t.licencia or '')) | lower }}"
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+const inputMun   = document.getElementById('buscarTiradorMun');
+const listaMun   = document.getElementById('listaTiradoresMun');
+const hiddenMun  = document.getElementById('tiradorIdMun');
+const selMun     = document.getElementById('tiradorSelMun');
+const btnLimpiar = document.getElementById('limpiarTiradorMun');
+let   focoMun    = -1;
+
+function renderMun(filtrados) {
+  listaMun.innerHTML = '';
+  focoMun = -1;
+
+  // Opción "Sin asignar" siempre en primer lugar
+  const sinAsignar = document.createElement('div');
+  sinAsignar.style.cssText = `
+    padding:10px 14px;cursor:pointer;
+    border-bottom:1px solid var(--gris-claro);
+    font-size:.86rem;color:var(--gris);font-style:italic;
+    transition:background .15s;
+  `;
+  sinAsignar.textContent = '— Sin asignar —';
+  sinAsignar.addEventListener('mouseenter', () => sinAsignar.style.background = 'var(--naranja-suave)');
+  sinAsignar.addEventListener('mouseleave', () => sinAsignar.style.background = '');
+  sinAsignar.addEventListener('click', () => limpiarSelMun());
+  listaMun.appendChild(sinAsignar);
+
+  if (filtrados.length === 0) {
+    const noRes = document.createElement('div');
+    noRes.style.cssText = 'padding:10px 14px;color:var(--gris);font-size:.86rem;';
+    noRes.textContent = 'Sin resultados';
+    listaMun.appendChild(noRes);
+  } else {
+    filtrados.forEach((t, idx) => {
+      const item = document.createElement('div');
+      item.dataset.id    = t.id;
+      item.dataset.texto = t.texto;
+      item.style.cssText = `
+        padding:10px 14px;cursor:pointer;
+        border-bottom:1px solid var(--gris-claro);
+        font-size:.88rem;transition:background .15s;
+        display:flex;justify-content:space-between;align-items:center;gap:10px;
+        border-left:3px solid transparent;
+      `;
+      const nombre = document.createElement('span');
+      nombre.style.fontWeight = '500';
+      nombre.textContent = t.texto;
+
+      const lic = document.createElement('span');
+      lic.style.cssText = 'font-size:.75rem;color:var(--gris);white-space:nowrap;';
+      lic.textContent = t.licencia ? 'Lic. ' + t.licencia : '';
+
+      item.appendChild(nombre);
+      item.appendChild(lic);
+      item.addEventListener('mouseenter', () => resaltarMun(idx));
+      item.addEventListener('click',      () => seleccionarMun(t));
+      listaMun.appendChild(item);
+    });
+  }
+  listaMun.style.display = 'block';
+}
+
+function resaltarMun(idx) {
+  // +1 por el ítem "Sin asignar" que ocupa el índice 0
+  [...listaMun.children].forEach((el, i) => {
+    const activo = i === idx + 1;
+    el.style.background  = activo ? 'var(--naranja-suave)' : '';
+    el.style.borderLeft  = activo ? '3px solid var(--naranja)' : '3px solid transparent';
+  });
+  focoMun = idx;
+}
+
+function seleccionarMun(t) {
+  hiddenMun.value          = t.id;
+  inputMun.value           = t.texto;
+  selMun.textContent       = `✓ ${t.texto}${t.licencia ? ' · Licencia: ' + t.licencia : ''}`;
+  selMun.style.display     = 'block';
+  btnLimpiar.style.display = 'block';
+  listaMun.style.display   = 'none';
+  inputMun.style.borderColor = 'var(--verde)';
+}
+
+function limpiarSelMun() {
+  hiddenMun.value          = '';
+  inputMun.value           = '';
+  selMun.style.display     = 'none';
+  btnLimpiar.style.display = 'none';
+  listaMun.style.display   = 'none';
+  inputMun.style.borderColor = '';
+}
+
+inputMun.addEventListener('input', () => {
+  hiddenMun.value          = '';
+  selMun.style.display     = 'none';
+  btnLimpiar.style.display = 'none';
+  inputMun.style.borderColor = '';
+  const q = inputMun.value.trim().toLowerCase();
+  renderMun(q ? TIRADORES_MUN.filter(t => t.busqueda.includes(q)) : TIRADORES_MUN);
+});
+
+inputMun.addEventListener('focus', () => {
+  const q = inputMun.value.trim().toLowerCase();
+  renderMun(q ? TIRADORES_MUN.filter(t => t.busqueda.includes(q)) : TIRADORES_MUN);
+});
+
+inputMun.addEventListener('keydown', e => {
+  const items = [...listaMun.children].slice(1); // excluir "Sin asignar"
+  if (!items.length || listaMun.style.display === 'none') return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = Math.min(focoMun + 1, items.length - 1);
+    resaltarMun(next);
+    items[next].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = Math.max(focoMun - 1, 0);
+    resaltarMun(prev);
+    items[prev].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (focoMun >= 0 && items[focoMun]) {
+      const t = TIRADORES_MUN.find(t => String(t.id) === items[focoMun].dataset.id);
+      if (t) seleccionarMun(t);
+    }
+
+  } else if (e.key === 'Escape') {
+    listaMun.style.display = 'none';
+  }
+});
+
+document.addEventListener('click', e => {
+  if (!inputMun.contains(e.target) && !listaMun.contains(e.target)) {
+    listaMun.style.display = 'none';
+  }
+});
+</script>
+{% endblock %}

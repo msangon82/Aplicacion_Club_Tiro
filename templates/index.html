@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Inicio · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Panel principal</p>
+<h1 class="pag-titulo">Bienvenido al sistema de gestión</h1>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-num">{{ n_tiradores }}</div>
+    <div class="stat-label">Tiradores registrados</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ n_competiciones }}</div>
+    <div class="stat-label">Competiciones</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+
+  <div>
+    <p class="pag-etiqueta" style="margin-bottom:16px;">Accesos rápidos</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <a href="/tiradores/nuevo" class="btn btn-naranja">＋ Nuevo Tirador</a>
+      <a href="/competiciones/nueva" class="btn btn-negro">＋ Nueva Competición</a>
+      <a href="/tiradores" class="btn btn-outline">Ver todos los tiradores</a>
+      <a href="/competiciones" class="btn btn-outline">Ver todas las competiciones</a>
+    </div>
+  </div>
+
+  <div>
+    <p class="pag-etiqueta" style="margin-bottom:16px;">Últimas competiciones</p>
+    {% if ultimas %}
+    <div class="tabla-wrapper">
+      <table>
+        <thead><tr>
+          <th>Nombre</th><th>Fecha</th><th>Modalidad</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for c in ultimas %}
+        <tr>
+          <td><strong>{{ c.nombre }}</strong></td>
+          <td>{{ c.fecha or '—' }}</td>
+          <td>{{ c.modalidad }}</td>
+          <td><a href="/competiciones/{{ c.id }}" class="btn btn-outline btn-sm">Ver</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--gris);font-size:.9rem;">No hay competiciones aún.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

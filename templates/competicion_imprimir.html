@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clasificación · {{ comp.nombre }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --negro: #0d0d0d;
+    --naranja: #e85d04;
+    --naranja-claro: #ff7c35;
+    --crema: #faf8f5;
+    --gris: #666;
+    --gris-claro: #ddd;
+    --blanco: #fff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--blanco);
+    color: var(--negro);
+    font-weight: 300;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Marca de agua */
+  body::before {
+    content: '';
+    background-image: url('/static/escudo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 45%;
+    opacity: 0.05;
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pagina { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 32px; }
+
+  /* ── Cabecera ── */
+  .cabecera {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 3px solid var(--naranja);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .cabecera img { width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--naranja); }
+  .cab-texto {}
+  .cab-club {
+    font-family: 'Playfair Display', serif;
+    font-size: 15pt; font-weight: 900;
+    color: var(--negro); line-height: 1.1;
+  }
+  .cab-club span { color: var(--naranja); }
+  .cab-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 7.5pt; letter-spacing: .3em;
+    text-transform: uppercase; color: var(--gris);
+    margin-top: 3px;
+  }
+  .cab-comp {
+    margin-left: auto; text-align: right;
+  }
+  .cab-comp .comp-nombre {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11pt; font-weight: 700;
+    letter-spacing: .05em; text-transform: uppercase;
+    color: var(--negro);
+  }
+  .cab-comp .comp-meta {
+    font-size: 8.5pt; color: var(--gris); margin-top: 2px;
+  }
+
+  /* ── Título principal ── */
+  .titulo-doc {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9pt; letter-spacing: .4em;
+    text-transform: uppercase; color: var(--naranja);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .titulo-doc::after { content:''; flex:1; height:1px; background:var(--gris-claro); }
+  .titulo-h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18pt; font-weight: 900;
+    margin-bottom: 22px;
+  }
+
+  /* ── Clasificación general ── */
+  .seccion-titulo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 8pt; letter-spacing: .35em;
+    text-transform: uppercase; color: var(--naranja);
+    margin: 20px 0 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .seccion-titulo::after { content:''; flex:1; height:1px; background:var(--gris-claro); }
+
+  table { width:100%; border-collapse:collapse; margin-bottom: 16px; }
+  thead tr { background: var(--negro); }
+  thead th {
+    padding: 8px 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 8pt; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--naranja-claro);
+    text-align: left; font-weight: 600;
+  }
+  thead th.c { text-align: center; }
+  tbody tr { border-bottom: 1px solid var(--gris-claro); }
+  tbody tr:nth-child(even) { background: var(--crema); }
+  tbody td { padding: 7px 10px; font-size: 9.5pt; vertical-align: middle; }
+  tbody td.c { text-align: center; }
+  tbody td.num { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10.5pt; }
+  tbody td.total { color: var(--naranja); font-weight: 700; font-size: 11pt; text-align: center; }
+  .pos { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 12pt; }
+  .pos-1 { color: #c9a80f; }
+  .pos-2 { color: #888; }
+  .pos-3 { color: #a05c2e; }
+  tr:nth-child(1) td { background: #fff9ed !important; }
+  tr:nth-child(2) td { background: #f9f9f9 !important; }
+  tr:nth-child(3) td { background: #f5f5f5 !important; }
+
+  /* ── Categorías ── */
+  .cats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .cat-bloque { border: 1px solid var(--gris-claro); break-inside: avoid; }
+  .cat-header {
+    background: var(--negro); padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cat-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 8pt; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; padding: 2px 8px;
+  }
+  .badge-primera  { background: #1a3a5c; color: #fff; }
+  .badge-segunda  { background: #2d5016; color: #fff; }
+  .badge-tercera  { background: #5c3a1a; color: #fff; }
+  .badge-veteranos{ background: #4a1a5c; color: #fff; }
+  .badge-junior   { background: #1a4a4a; color: #fff; }
+  .badge-femenino { background: #5c1a3a; color: #fff; }
+  .cat-bloque table { margin-bottom: 0; }
+  .cat-bloque thead th { font-size: 7.5pt; padding: 6px 8px; }
+  .cat-bloque tbody td { font-size: 8.5pt; padding: 6px 8px; }
+  .cat-bloque tbody tr:nth-child(1) td { background: #fff9ed !important; }
+  .cat-bloque tbody tr:nth-child(2) td { background: #f9f9f9 !important; }
+  .cat-bloque tbody tr:nth-child(3) td { background: #f5f5f5 !important; }
+
+  /* ── Pie de página ── */
+  .pie {
+    margin-top: 28px;
+    border-top: 1px solid var(--gris-claro);
+    padding-top: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 7.5pt; color: var(--gris);
+  }
+  .pie span { color: var(--naranja); }
+
+  /* ── Botón imprimir (solo pantalla) ── */
+  .btn-imprimir {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; background: var(--naranja); color: #fff;
+    font-family: 'Barlow Condensed', sans-serif; font-size: .85rem;
+    font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    border: none; cursor: pointer; margin-bottom: 22px;
+    transition: background .2s;
+  }
+  .btn-imprimir:hover { background: var(--naranja-claro); }
+  .btn-volver {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; background: transparent; color: var(--naranja);
+    font-family: 'Barlow Condensed', sans-serif; font-size: .85rem;
+    font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    border: 1px solid var(--naranja); cursor: pointer; margin-bottom: 22px;
+    text-decoration: none; transition: all .2s;
+  }
+  .btn-volver:hover { background: var(--naranja); color: #fff; }
+  .acciones-imp { display: flex; gap: 12px; margin-bottom: 16px; }
+
+  /* ── Print media ── */
+  @media print {
+    body::before { opacity: 0.04; }
+    .acciones-imp { display: none !important; }
+    .pagina { padding: 0; max-width: 100%; }
+    @page { margin: 15mm 12mm; size: A4 portrait; }
+    .cats-grid { grid-template-columns: repeat(2, 1fr); }
+    .cat-bloque { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <!-- Acciones solo en pantalla -->
+  <div class="acciones-imp">
+    <button class="btn-imprimir" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+    <a href="/competiciones/{{ comp.id }}" class="btn-volver">← Volver</a>
+  </div>
+
+  <!-- Cabecera del documento -->
+  <div class="cabecera">
+    <img src="/static/escudo.png" alt="Escudo CTO Cartagena">
+    <div class="cab-texto">
+      <div class="cab-club">Club de Tiro <span>Olímpico</span> de Cartagena</div>
+      <div class="cab-sub">Fundado en 1901 · Precisión · Disciplina · Tradición</div>
+    </div>
+    <div class="cab-comp">
+      <div class="comp-nombre">{{ comp.modalidad }}</div>
+      <div class="comp-meta">{% if comp.fecha %}📅 {{ comp.fecha }}{% else %}Fecha por confirmar{% endif %}</div>
+    </div>
+  </div>
+
+  <!-- Título -->
+  <p class="titulo-doc">Resultados oficiales</p>
+  <h1 class="titulo-h1">{{ comp.nombre }}</h1>
+
+  <!-- Clasificación general -->
+  {% if clasificacion %}
+  <p class="seccion-titulo">Clasificación general</p>
+  <table>
+    <thead>
+      <tr>
+        <th class="c" style="width:44px;">Pos.</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Club</th>
+        <th class="c">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for i in clasificacion %}
+    <tr>
+      <td class="c">
+        <span class="pos pos-{{ loop.index if loop.index <= 3 else '' }}">
+          {% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}º{% endif %}
+        </span>
+      </td>
+      <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
+      <td><span class="cat-badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td>{{ i.club }}</td>
+      <td class="total">{{ i.total }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:var(--gris);margin-bottom:20px;font-size:.9rem;">Aún no hay puntuaciones registradas.</p>
+  {% endif %}
+
+  <!-- Clasificación por categoría -->
+  {% if por_cat %}
+  <p class="seccion-titulo">Clasificación por categoría</p>
+  <div class="cats-grid">
+    {% for cat, lista in por_cat.items() %}
+    <div class="cat-bloque">
+      <div class="cat-header">
+        <span class="cat-badge badge-{{ cat|lower }}">{{ cat }}</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px;">Pos.</th>
+            <th>Nombre</th>
+            <th>Licencia</th>
+            <th class="c">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for i in lista %}
+        <tr>
+          <td class="c" style="font-weight:700;color:var(--gris);">{{ loop.index }}º</td>
+          <td>{{ i.apellidos }}, {{ i.nombre }}</td>
+          <td style="color:var(--gris);">{{ i.licencia or '—' }}</td>
+          <td class="total">{{ i.total }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="padding:8px;color:var(--gris);font-style:italic;text-align:center;">Sin puntuaciones</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Pie -->
+  <div class="pie">
+    <span>Club de Tiro <span>Olímpico</span> de Cartagena · Fundado en 1901</span>
+    <span>Documento generado el {{ now }}</span>
+  </div>
+
+</div>
+</body>
+</html>

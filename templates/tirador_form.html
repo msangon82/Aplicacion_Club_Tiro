@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if t else 'Nuevo' }} Tirador · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">{{ 'Editar tirador' if t else 'Nuevo tirador' }}</p>
+<h1 class="pag-titulo">{{ 'Editar: ' + t.nombre + ' ' + t.apellidos if t else 'Registrar nuevo tirador' }}</h1>
+
+{% if error %}
+<div class="alerta alerta-error">{{ error }}</div>
+{% endif %}
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" name="nombre" required value="{{ t.nombre if t else '' }}" placeholder="Nombre">
+      </div>
+      <div class="form-group">
+        <label>Apellidos *</label>
+        <input type="text" name="apellidos" required value="{{ t.apellidos if t else '' }}" placeholder="Apellidos">
+      </div>
+      <div class="form-group">
+        <label>DNI *</label>
+        <input type="text" name="dni" required value="{{ t.dni if t else '' }}"
+               placeholder="12345678A" pattern="[0-9]{8}[A-Za-z]"
+               title="Formato: 8 dígitos + letra">
+      </div>
+      <div class="form-group">
+        <label>Nº Licencia</label>
+        <input type="text" name="licencia" value="{{ t.licencia if t else '' }}" placeholder="Número de licencia">
+      </div>
+      <div class="form-group">
+        <label>Club</label>
+        <input type="text" name="club" value="{{ t.club if t else '' }}" placeholder="Club deportivo">
+      </div>
+      <div class="form-group">
+        <label>Categoría *</label>
+        <select name="categoria" required>
+          {% for c in categorias %}
+          <option value="{{ c }}" {{ 'selected' if t and t.categoria==c }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-naranja">
+        {{ 'Guardar cambios' if t else 'Registrar tirador' }}
+      </button>
+      <a href="/tiradores" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

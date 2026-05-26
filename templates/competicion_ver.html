@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block title %}{{ comp.nombre }} · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Competición · {{ comp.modalidad }}</p>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;">
+  <h1 class="pag-titulo" style="margin-bottom:0;">{{ comp.nombre }}</h1>
+  {% if clasificacion %}
+  <a href="/competiciones/{{ comp.id }}/imprimir" target="_blank" class="btn btn-negro">
+    🖨 Imprimir clasificación
+  </a>
+  {% endif %}
+</div>
+{% if comp.fecha %}<p style="color:var(--gris);margin-bottom:24px;font-size:.9rem;">📅 {{ comp.fecha }}</p>{% else %}<div style="margin-bottom:24px;"></div>{% endif %}
+
+<!-- ── INSCRIBIR TIRADOR ── -->
+<details style="margin-bottom:28px;">
+  <summary style="cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:.85rem;
+    letter-spacing:.15em;text-transform:uppercase;color:var(--naranja);
+    padding:12px 16px;background:var(--blanco);border:1px solid var(--naranja);
+    list-style:none;user-select:none;">
+    ＋ Inscribir tirador en esta competición
+  </summary>
+  <div class="form-card" style="border-top:none;margin-top:0;">
+    {% if disponibles %}
+    <form method="POST" action="/competiciones/{{ comp.id }}/inscribir" id="formInscribir">
+      <div class="form-grid">
+
+        <!-- Selector con búsqueda -->
+        <div class="form-group" style="position:relative;">
+          <label>Tirador *</label>
+
+          <!-- Campo de búsqueda visible -->
+          <input
+            type="text"
+            id="buscarTirador"
+            placeholder="Escribe nombre, apellidos o categoría…"
+            autocomplete="off"
+            style="width:100%;"
+          >
+
+          <!-- Lista desplegable de resultados -->
+          <div id="listaTiradores" style="
+            display:none;
+            position:absolute;
+            top:100%;left:0;right:0;
+            background:var(--blanco);
+            border:1px solid var(--naranja);
+            border-top:none;
+            max-height:260px;
+            overflow-y:auto;
+            z-index:500;
+            box-shadow:0 4px 12px rgba(0,0,0,.12);
+          "></div>
+
+          <!-- Input oculto que se envía al servidor -->
+          <input type="hidden" name="tirador_id" id="tiradorId" required>
+
+          <!-- Nombre seleccionado (feedback visual) -->
+          <div id="tiradorSeleccionado" style="
+            display:none;
+            margin-top:6px;
+            padding:7px 12px;
+            background:var(--naranja-suave);
+            border-left:3px solid var(--naranja);
+            font-size:.84rem;
+            font-weight:500;
+          "></div>
+        </div>
+
+        <div class="form-group">
+          <label>Puesto / Línea *</label>
+          <input type="number" name="puesto" required min="1" max="999" placeholder="Ej: 130">
+        </div>
+
+        <div class="form-group" style="justify-content:flex-end;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:auto;">
+            <input type="checkbox" name="pagado" style="width:16px;height:16px;accent-color:var(--naranja);">
+            Inscripción pagada
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-naranja" id="btnInscribir" disabled>Inscribir</button>
+        <span id="msgSelecciona" style="font-size:.82rem;color:var(--gris);">
+          Selecciona un tirador de la lista
+        </span>
+      </div>
+    </form>
+
+    {% else %}
+    <p style="color:var(--gris);font-size:.9rem;">Todos los tiradores ya están inscritos.</p>
+    {% endif %}
+  </div>
+</details>
+
+<!-- ── TABLA DE INSCRITOS ── -->
+<p class="pag-etiqueta" style="margin-bottom:14px;">Inscritos ({{ inscripciones|length }})</p>
+{% if inscripciones %}
+<div class="tabla-wrapper" style="margin-bottom:40px;">
+  <table>
+    <thead><tr>
+      <th>Puesto</th><th>Nombre</th><th>DNI</th><th>Licencia</th>
+      <th>Club</th><th>Categoría</th><th>Pagado</th><th>Total</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>
+    {% for i in inscripciones %}
+    <tr>
+      <td class="num">{{ i.puesto }}</td>
+      <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
+      <td style="font-family:'Barlow Condensed',sans-serif;">{{ i.dni }}</td>
+      <td class="num">{{ i.licencia or '—' }}</td>
+      <td>{{ i.club }}</td>
+      <td><span class="badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td><span class="badge {{ 'badge-si' if i.pagado else 'badge-no' }}">{{ 'Sí' if i.pagado else 'No' }}</span></td>
+      <td class="num" style="color:var(--naranja);font-size:1.05rem;">{{ i.total if i.total > 0 else '—' }}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <a href="/puntuaciones/{{ i.id }}" class="btn btn-naranja btn-sm">Puntuaciones</a>
+          <form method="POST" action="/inscripciones/{{ i.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar la inscripción?')">
+            <button type="submit" class="btn btn-rojo btn-sm">✕</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── CLASIFICACIÓN ── -->
+{% if clasificacion %}
+<p class="pag-etiqueta" style="margin-bottom:14px;">Clasificación general</p>
+<div class="tabla-wrapper" style="margin-bottom:32px;">
+  <table class="clasi-tabla">
+    <thead><tr><th>Pos.</th><th>Nombre</th><th>Categoría</th><th>Club</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for i in clasificacion %}
+    <tr>
+      <td style="text-align:center;">
+        <span class="pos-medal pos-{{ loop.index if loop.index <= 3 else '' }}">
+          {% if loop.index==1 %}🥇{% elif loop.index==2 %}🥈{% elif loop.index==3 %}🥉{% else %}{{ loop.index }}{% endif %}
+        </span>
+      </td>
+      <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
+      <td><span class="badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td>{{ i.club }}</td>
+      <td class="num" style="color:var(--naranja);font-size:1.1rem;">{{ i.total }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if por_cat %}
+<p class="pag-etiqueta" style="margin-bottom:14px;">Clasificación por categoría</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+  {% for cat, lista in por_cat.items() %}
+  <div style="border:1px solid var(--gris-claro);">
+    <div style="background:var(--negro);padding:10px 14px;">
+      <span class="badge badge-{{ cat|lower }}">{{ cat }}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="background:#222;color:#ccc;padding:7px 10px;font-size:.7rem;letter-spacing:.15em;text-align:left;">Pos.</th>
+        <th style="background:#222;color:#ccc;padding:7px 10px;font-size:.7rem;letter-spacing:.15em;text-align:left;">Nombre</th>
+        <th style="background:#222;color:var(--naranja-claro);padding:7px 10px;font-size:.7rem;letter-spacing:.15em;">Total</th>
+      </tr></thead>
+      <tbody>
+      {% for i in lista %}
+      <tr style="border-bottom:1px solid var(--gris-claro);">
+        <td style="padding:8px 10px;font-weight:700;color:var(--gris);">{{ loop.index }}º</td>
+        <td style="padding:8px 10px;font-size:.88rem;">{{ i.apellidos }}, {{ i.nombre }}</td>
+        <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--naranja);">{{ i.total }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{% else %}
+<p style="color:var(--gris);font-size:.9rem;">Aún no hay tiradores inscritos en esta competición.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if disponibles %}
+<script>
+// ── Datos de tiradores disponibles (inyectados desde Jinja) ──
+const TIRADORES = [
+  {% for t in disponibles %}
+  {
+    id:        {{ t.id }},
+    texto:     "{{ t.apellidos }}, {{ t.nombre }}",
+    categoria: "{{ t.categoria }}",
+    club:      "{{ t.club or '' }}",
+    licencia:  "{{ t.licencia or '' }}",
+    busqueda:  "{{ (t.apellidos + ' ' + t.nombre + ' ' + (t.categoria or '') + ' ' + (t.club or '') + ' ' + (t.licencia or '')) | lower }}"
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+const inputBuscar   = document.getElementById('buscarTirador');
+const lista         = document.getElementById('listaTiradores');
+const inputOculto   = document.getElementById('tiradorId');
+const divSeleccion  = document.getElementById('tiradorSeleccionado');
+const btnInscribir  = document.getElementById('btnInscribir');
+const msgSelecciona = document.getElementById('msgSelecciona');
+
+let indiceFoco = -1;   // para navegación con teclado
+
+// ── Renderiza los ítems filtrados ──
+function renderLista(filtrados) {
+  lista.innerHTML = '';
+  indiceFoco = -1;
+
+  if (filtrados.length === 0) {
+    lista.innerHTML = '<div style="padding:12px 14px;color:var(--gris);font-size:.86rem;">Sin resultados</div>';
+    lista.style.display = 'block';
+    return;
+  }
+
+  filtrados.forEach((t, idx) => {
+    const item = document.createElement('div');
+    item.dataset.id    = t.id;
+    item.dataset.texto = t.texto;
+    item.dataset.idx   = idx;
+    item.style.cssText = `
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--gris-claro);
+      font-size: .88rem;
+      transition: background .15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    `;
+
+    const nombre = document.createElement('span');
+    nombre.style.fontWeight = '500';
+    nombre.textContent = t.texto;
+
+    const meta = document.createElement('span');
+    meta.style.cssText = 'font-size:.75rem;color:var(--gris);white-space:nowrap;';
+    meta.textContent = [t.categoria, t.club].filter(Boolean).join(' · ');
+
+    item.appendChild(nombre);
+    item.appendChild(meta);
+
+    item.addEventListener('mouseenter', () => resaltarItem(idx));
+    item.addEventListener('click',      () => seleccionarItem(t));
+    lista.appendChild(item);
+  });
+
+  lista.style.display = 'block';
+}
+
+// ── Resalta un ítem en la lista ──
+function resaltarItem(idx) {
+  [...lista.children].forEach((el, i) => {
+    el.style.background = i === idx
+      ? 'var(--naranja-suave)'
+      : 'var(--blanco)';
+    el.style.borderLeft = i === idx
+      ? '3px solid var(--naranja)'
+      : '3px solid transparent';
+  });
+  indiceFoco = idx;
+}
+
+// ── Confirma la selección de un tirador ──
+function seleccionarItem(t) {
+  inputOculto.value         = t.id;
+  inputBuscar.value         = t.texto;
+  divSeleccion.textContent  = `✓ ${t.texto}${t.licencia ? ' · Licencia: ' + t.licencia : ''}`;
+  divSeleccion.style.display = 'block';
+  btnInscribir.disabled     = false;
+  msgSelecciona.style.display = 'none';
+  lista.style.display        = 'none';
+  inputBuscar.style.borderColor = 'var(--verde)';
+}
+
+// ── Limpia la selección ──
+function limpiarSeleccion() {
+  inputOculto.value          = '';
+  divSeleccion.style.display = 'none';
+  btnInscribir.disabled      = true;
+  msgSelecciona.style.display = 'inline';
+  inputBuscar.style.borderColor = '';
+}
+
+// ── Eventos del campo de búsqueda ──
+inputBuscar.addEventListener('input', () => {
+  limpiarSeleccion();
+  const q = inputBuscar.value.trim().toLowerCase();
+  if (q.length === 0) {
+    // Sin texto → mostrar todos
+    renderLista(TIRADORES);
+  } else {
+    const filtrados = TIRADORES.filter(t => t.busqueda.includes(q));
+    renderLista(filtrados);
+  }
+});
+
+inputBuscar.addEventListener('focus', () => {
+  const q = inputBuscar.value.trim().toLowerCase();
+  const filtrados = q ? TIRADORES.filter(t => t.busqueda.includes(q)) : TIRADORES;
+  renderLista(filtrados);
+});
+
+// ── Navegación con teclado ──
+inputBuscar.addEventListener('keydown', e => {
+  const items = [...lista.children];
+  if (!items.length || lista.style.display === 'none') return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = Math.min(indiceFoco + 1, items.length - 1);
+    resaltarItem(next);
+    items[next].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = Math.max(indiceFoco - 1, 0);
+    resaltarItem(prev);
+    items[prev].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (indiceFoco >= 0 && items[indiceFoco]) {
+      const id    = items[indiceFoco].dataset.id;
+      const texto = items[indiceFoco].dataset.texto;
+      const t     = TIRADORES.find(t => String(t.id) === id);
+      if (t) seleccionarItem(t);
+    }
+
+  } else if (e.key === 'Escape') {
+    lista.style.display = 'none';
+  }
+});
+
+// ── Cerrar la lista al hacer clic fuera ──
+document.addEventListener('click', e => {
+  if (!inputBuscar.contains(e.target) && !lista.contains(e.target)) {
+    lista.style.display = 'none';
+  }
+});
+
+// ── Validar antes de enviar ──
+document.getElementById('formInscribir').addEventListener('submit', e => {
+  if (!inputOculto.value) {
+    e.preventDefault();
+    inputBuscar.focus();
+    inputBuscar.style.borderColor = 'var(--rojo)';
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

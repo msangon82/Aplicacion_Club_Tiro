@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}CTO Cartagena{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --negro: #0d0d0d;
+  --grafito: #1a1a1a;
+  --naranja: #e85d04;
+  --naranja-claro: #ff7c35;
+  --naranja-suave: #fff3ec;
+  --crema: #f7f4f0;
+  --blanco: #ffffff;
+  --gris: #7a7a7a;
+  --gris-claro: #e5e0d8;
+  --verde: #2d7a3a;
+  --rojo: #c0392b;
+  --azul: #1a3a5c;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Barlow',sans-serif;
+  background:var(--crema);
+  color:var(--negro);
+  font-weight:300;
+  line-height:1.6;
+  min-height:100vh;
+}
+body::before{
+  content:'';
+  background-image:url('/static/escudo.png');
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:50%;
+  opacity:0.04;
+  position:fixed;
+  top:0;left:0;bottom:0;right:0;
+  z-index:0;pointer-events:none;
+}
+header{
+  background:var(--negro);
+  border-bottom:3px solid var(--naranja);
+  position:relative;z-index:10;
+}
+.header-inner{
+  max-width:1300px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-brand{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 0;text-decoration:none;
+}
+.header-brand img{width:52px;height:52px;border-radius:50%;border:2px solid var(--naranja);}
+.brand-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:900;color:var(--blanco);line-height:1.1;}
+.brand-title span{color:var(--naranja-claro);}
+.brand-sub{font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gris);}
+.header-redes{display:flex;gap:8px;align-items:center;}
+.header-redes a img{width:28px;height:28px;border-radius:5px;opacity:0.7;transition:opacity .2s,transform .2s;}
+.header-redes a:hover img{opacity:1;transform:scale(1.1);}
+nav{background:var(--grafito);border-bottom:2px solid var(--naranja);position:sticky;top:0;z-index:200;}
+.nav-inner{max-width:1300px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;}
+nav ul{list-style:none;display:flex;margin:0;padding:0;}
+nav ul li a{
+  display:block;padding:13px 20px;
+  font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:600;
+  letter-spacing:.13em;text-transform:uppercase;color:#ccc;text-decoration:none;
+  transition:color .2s,background .2s;border-right:1px solid #2a2a2a;
+}
+nav ul li:first-child a{border-left:1px solid #2a2a2a;}
+nav ul li a:hover,nav ul li a.activo{color:var(--naranja-claro);background:rgba(232,93,4,.1);}
+.hamburguesa{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:13px 0;background:none;border:none;}
+.hamburguesa span{display:block;width:22px;height:2px;background:var(--naranja-claro);transition:all .3s;}
+.hamburguesa.abierto span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburguesa.abierto span:nth-child(2){opacity:0;}
+.hamburguesa.abierto span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.nav-menu{transition:max-height .35s ease,opacity .3s;max-height:300px;overflow:hidden;opacity:1;}
+.nav-menu.cerrado{max-height:0;opacity:0;}
+.contenido{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:36px 24px 60px;}
+.pag-etiqueta{
+  font-family:'Barlow Condensed',sans-serif;font-size:.68rem;letter-spacing:.4em;
+  text-transform:uppercase;color:var(--naranja);margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;
+}
+.pag-etiqueta::after{content:'';flex:1;height:1px;background:var(--gris-claro);}
+.pag-titulo{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;margin-bottom:28px;}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:10px 22px;
+  font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;text-decoration:none;
+  border:none;cursor:pointer;transition:all .2s;
+}
+.btn-naranja{background:var(--naranja);color:var(--blanco);}
+.btn-naranja:hover{background:var(--naranja-claro);}
+.btn-negro{background:var(--negro);color:var(--blanco);}
+.btn-negro:hover{background:#333;}
+.btn-outline{background:transparent;color:var(--naranja);border:1px solid var(--naranja);}
+.btn-outline:hover{background:var(--naranja);color:var(--blanco);}
+.btn-sm{padding:6px 14px;font-size:.78rem;}
+.btn-rojo{background:var(--rojo);color:var(--blanco);}
+.btn-rojo:hover{background:#a93226;}
+.btn-verde{background:var(--verde);color:var(--blanco);}
+.btn-verde:hover{background:#236830;}
+.btn-azul{background:var(--azul);color:var(--blanco);}
+.btn-azul:hover{background:#254d7a;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:36px;}
+.stat-card{background:var(--negro);color:var(--blanco);padding:24px 20px;border-left:3px solid var(--naranja);}
+.stat-num{font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;color:var(--naranja-claro);line-height:1;}
+.stat-label{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;color:#aaa;margin-top:6px;}
+.tabla-wrapper{overflow-x:auto;border:1px solid var(--gris-claro);}
+table{width:100%;border-collapse:collapse;background:var(--blanco);}
+thead tr{background:var(--negro);}
+thead th{padding:12px 14px;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--naranja-claro);text-align:left;font-weight:600;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--gris-claro);}
+tbody tr:hover{background:var(--naranja-suave);}
+tbody td{padding:11px 14px;font-size:.9rem;vertical-align:middle;}
+tbody td.num{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:600;}
+.badge{display:inline-block;padding:3px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.badge-primera{background:#1a3a5c;color:#fff;}
+.badge-segunda{background:#2d5016;color:#fff;}
+.badge-tercera{background:#5c3a1a;color:#fff;}
+.badge-veteranos{background:#4a1a5c;color:#fff;}
+.badge-junior{background:#1a4a4a;color:#fff;}
+.badge-femenino{background:#5c1a3a;color:#fff;}
+.badge-si{background:var(--verde);color:#fff;}
+.badge-no{background:var(--rojo);color:#fff;}
+.badge-entrada{background:var(--verde);color:#fff;}
+.badge-salida{background:var(--rojo);color:#fff;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group label{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gris);}
+.form-group input,.form-group select,.form-group textarea{
+  padding:10px 14px;border:1px solid var(--gris-claro);
+  background:var(--blanco);font-family:'Barlow',sans-serif;font-size:.9rem;
+  color:var(--negro);outline:none;transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--naranja);}
+.form-card{background:var(--blanco);border:1px solid var(--gris-claro);padding:28px;margin-bottom:24px;}
+.form-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;align-items:center;}
+.alerta{padding:12px 18px;font-size:.9rem;margin-bottom:20px;border-left:3px solid;}
+.alerta-error{background:#fdf0ef;border-color:var(--rojo);color:var(--rojo);}
+.alerta-ok{background:#edf7ef;border-color:var(--verde);color:var(--verde);}
+.punt-tabla{width:100%;border-collapse:collapse;}
+.punt-tabla th{background:var(--negro);color:var(--naranja-claro);padding:9px 8px;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;text-align:center;white-space:nowrap;}
+.punt-tabla td{padding:4px 4px;border:1px solid var(--gris-claro);background:var(--blanco);text-align:center;vertical-align:middle;}
+.punt-tabla tr.serie-150{background-color:#fffbf5;}
+.punt-tabla tr.serie-20{background-color:#f5f8ff;}
+.punt-tabla td.lbl{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);background:var(--crema);padding:4px 10px;text-align:right;white-space:nowrap;min-width:100px;}
+.punt-input{width:52px;padding:6px 4px;border:1px solid var(--gris-claro);background:var(--blanco);text-align:center;font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;transition:border-color .15s,background .15s;}
+.punt-input:focus{border-color:var(--naranja);background:var(--naranja-suave);}
+.punt-input.modificado{border-color:var(--verde);background:#edf7ef;}
+.suma-serie{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--negro);padding:4px 10px;background:var(--gris-claro);min-width:46px;}
+.total-general{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--naranja);text-align:center;}
+.parcial-box{background:var(--negro);color:var(--blanco);padding:3px 10px;font-weight:600;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;}
+.clasi-tabla tbody tr:nth-child(1) td{background:#fff8ee;}
+.clasi-tabla tbody tr:nth-child(2) td{background:#f9f9f9;}
+.clasi-tabla tbody tr:nth-child(3) td{background:#f4f4f4;}
+.pos-medal{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:900;}
+.pos-1{color:#c9a80f;}.pos-2{color:#888;}.pos-3{color:#a05c2e;}
+/* Stock calibre pills */
+.stock-grid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;}
+.stock-pill{
+  background:var(--negro);color:var(--blanco);
+  padding:14px 20px;border-left:3px solid var(--naranja);
+  min-width:140px;
+}
+.stock-pill .cal{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--naranja-claro);}
+.stock-pill .qty{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;line-height:1;}
+.stock-pill .lbl{font-size:.72rem;color:#aaa;margin-top:2px;}
+.stock-pill.bajo{border-color:var(--rojo);}
+.stock-pill.bajo .qty{color:#e87070;}
+footer{background:var(--negro);color:var(--gris);text-align:center;padding:22px 24px;font-size:.78rem;letter-spacing:.05em;border-top:3px solid var(--naranja);position:relative;z-index:10;margin-top:auto;}
+footer span{color:var(--naranja-claro);}
+@media(max-width:700px){
+  .hamburguesa{display:flex;}
+  .nav-menu{position:absolute;top:100%;left:0;right:0;background:var(--grafito);border-top:1px solid #333;z-index:199;}
+  nav ul{flex-direction:column;width:100%;}
+  nav ul li a{border-right:none;border-bottom:1px solid #2a2a2a;padding:14px 22px;}
+  nav ul li:first-child a{border-left:none;}
+  .form-grid{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-brand">
+      <img src="/static/escudo.png" alt="Escudo CTO Cartagena">
+      <div class="brand-text">
+        <div class="brand-title">C.T.O. <span>Cartagena</span></div>
+        <div class="brand-sub">Gestión de Competiciones</div>
+      </div>
+    </a>
+  </div>
+</header>
+<nav>
+  <div class="nav-inner">
+    <button class="hamburguesa" id="btnMenu" aria-label="Menú"><span></span><span></span><span></span></button>
+    <div class="nav-menu" id="navMenu">
+      <ul>
+        <li><a href="/" class="{% if request.endpoint=='index' %}activo{% endif %}">Inicio</a></li>
+        <li><a href="/tiradores" class="{% if 'tirador' in (request.endpoint or '') %}activo{% endif %}">Tiradores</a></li>
+        <li><a href="/competiciones" class="{% if 'competicion' in (request.endpoint or '') or 'puntuacion' in (request.endpoint or '') %}activo{% endif %}">Competiciones</a></li>
+        <li><a href="/municion" class="{% if 'municion' in (request.endpoint or '') %}activo{% endif %}">Munición</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="contenido">
+{% block contenido %}{% endblock %}
+</div>
+<footer>
+  <p>© 2026 <span>Club de Tiro Olímpico de Cartagena</span> · Fundado en 1901 · Sistema de gestión interno</p>
+</footer>
+<script>
+const btn=document.getElementById('btnMenu');
+const menu=document.getElementById('navMenu');
+btn.addEventListener('click',()=>{btn.classList.toggle('abierto');menu.classList.toggle('cerrado');});
+function initMenu(){if(window.innerWidth<=700)menu.classList.add('cerrado');else menu.classList.remove('cerrado');}
+initMenu();window.addEventListener('resize',initMenu);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

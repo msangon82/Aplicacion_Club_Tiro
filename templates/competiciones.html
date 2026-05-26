@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Competiciones · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Gestión de competiciones</p>
+<div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+  <h1 class="pag-titulo" style="margin-bottom:0;">Competiciones</h1>
+  <a href="/competiciones/nueva" class="btn btn-naranja">＋ Nueva competición</a>
+</div>
+
+<div class="tabla-wrapper">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Nombre</th><th>Fecha</th><th>Modalidad</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>
+    {% for c in competiciones %}
+    <tr>
+      <td class="num">{{ c.id }}</td>
+      <td><strong>{{ c.nombre }}</strong></td>
+      <td>{{ c.fecha or '—' }}</td>
+      <td>{{ c.modalidad }}</td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <a href="/competiciones/{{ c.id }}" class="btn btn-naranja btn-sm">Gestionar</a>
+          <a href="/competiciones/{{ c.id }}/imprimir" target="_blank"
+             class="btn btn-negro btn-sm" title="Imprimir clasificación por categoría">
+            🖨 Clasificación
+          </a>
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:28px;">
+      No hay competiciones. <a href="/competiciones/nueva" style="color:var(--naranja);">Crear la primera</a>
+    </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

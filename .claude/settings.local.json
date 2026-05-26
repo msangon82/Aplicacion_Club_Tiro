@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://127.0.0.1:5000/)"
+    ]
+  }
+}
