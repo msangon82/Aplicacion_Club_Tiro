@@ -63,8 +63,8 @@
                 {% if v|string|lower == 'x' %}{% set suma = suma + 10 %}{% else %}{% set suma = suma + (v|float) %}{% endif %}
               {% endif %}
             {% endfor %}
-            {{ suma|int }}
-          {% else %}0{% endif %}
+            {{ "%.2f"|format(suma) }}
+          {% else %}0.00{% endif %}
         </span>
       </td>
     </tr>
@@ -138,7 +138,7 @@ function recalcFila(serie){
     if(inp) suma += parseVal(inp.value);
   }
   const el = document.getElementById(`suma_s${serie}`);
-  if(el) el.textContent = suma % 1 === 0 ? suma : suma.toFixed(1);
+  if(el) el.textContent = suma.toFixed(2);
   return suma;
 }
 
