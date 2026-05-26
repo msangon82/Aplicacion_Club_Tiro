@@ -48,11 +48,12 @@ def init_db():
             );
 
             CREATE TABLE IF NOT EXISTS inscripciones (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                competicion_id INTEGER NOT NULL,
-                tirador_id     INTEGER NOT NULL,
-                puesto         INTEGER NOT NULL,
-                pagado         INTEGER DEFAULT 0,
+                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                competicion_id     INTEGER NOT NULL,
+                tirador_id         INTEGER NOT NULL,
+                puesto             INTEGER NOT NULL,
+                pagado             INTEGER DEFAULT 0,
+                ocultar_categoria  INTEGER DEFAULT 0,
                 FOREIGN KEY (competicion_id) REFERENCES competiciones(id),
                 FOREIGN KEY (tirador_id)     REFERENCES tiradores(id),
                 UNIQUE(competicion_id, puesto)
@@ -87,6 +88,13 @@ def init_db():
             );
         """)
         db.commit()
+
+        # Migración: añadir columna ocultar_categoria si no existe
+        try:
+            db.execute("ALTER TABLE inscripciones ADD COLUMN ocultar_categoria INTEGER DEFAULT 0")
+            db.commit()
+        except Exception:
+            pass
 
         # Stock inicial de calibres
         calibres = ['.32 S&W', '9 PB', '.38 SPL', '.22lr']
@@ -287,7 +295,7 @@ def competicion_imprimir(cid):
         return redirect(url_for("competiciones"))
 
     insc_rows = db.execute("""
-        SELECT i.id, i.puesto, i.pagado,
+        SELECT i.id, i.puesto, i.pagado, i.ocultar_categoria,
                t.id as tid, t.nombre, t.apellidos, t.dni, t.licencia, t.club, t.categoria
         FROM inscripciones i
         JOIN tiradores t ON t.id = i.tirador_id
@@ -300,16 +308,18 @@ def competicion_imprimir(cid):
         total = calcular_total_inscripcion(row["id"], db)
         inscripciones.append(dict(row) | {"total": total})
 
-    clasificacion = sorted([i for i in inscripciones if i["total"] > 0],
+    # Solo se imprimen los que NO tienen categoría oculta
+    visibles = [i for i in inscripciones if not i["ocultar_categoria"]]
+    clasificacion = sorted([i for i in visibles if i["total"] > 0],
                            key=lambda x: -x["total"])
     por_cat = {}
     for i in clasificacion:
         por_cat.setdefault(i["categoria"], []).append(i)
 
-    # También todos los inscritos sin puntuación (total=0) por categoría
-    sin_puntos = [i for i in inscripciones if i["total"] == 0]
+    # También los visibles sin puntuación por categoría
+    sin_puntos = [i for i in visibles if i["total"] == 0]
     for i in sin_puntos:
-        por_cat.setdefault(i["categoria"], [])   # asegura que la cat aparece
+        por_cat.setdefault(i["categoria"], [])
 
     now = datetime.now().strftime('%d/%m/%Y %H:%M')
     return render_template("competicion_imprimir.html", now=now,
@@ -319,14 +329,15 @@ def competicion_imprimir(cid):
 
 @app.route("/competiciones/<int:cid>/inscribir", methods=["POST"])
 def inscribir(cid):
-    db     = get_db()
-    tid    = request.form["tirador_id"]
-    puesto = request.form["puesto"]
-    pagado = 1 if request.form.get("pagado") else 0
+    db                = get_db()
+    tid               = request.form["tirador_id"]
+    puesto            = request.form["puesto"]
+    pagado            = 1 if request.form.get("pagado") else 0
+    ocultar_categoria = 1 if request.form.get("ocultar_categoria") else 0
     try:
         db.execute(
-            "INSERT INTO inscripciones (competicion_id,tirador_id,puesto,pagado) VALUES (?,?,?,?)",
-            (cid, tid, puesto, pagado))
+            "INSERT INTO inscripciones (competicion_id,tirador_id,puesto,pagado,ocultar_categoria) VALUES (?,?,?,?,?)",
+            (cid, tid, puesto, pagado, ocultar_categoria))
         db.commit()
     except sqlite3.IntegrityError:
         pass

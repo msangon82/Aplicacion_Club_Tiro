@@ -26,7 +26,7 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Tirador *</label>
-          <select name="tirador_id" required>
+          <select id="sel-tirador-insc" name="tirador_id" required>
             <option value="">— Seleccionar —</option>
             {% for t in disponibles %}
             <option value="{{ t.id }}">{{ t.apellidos }}, {{ t.nombre }} ({{ t.categoria }})</option>
@@ -41,6 +41,12 @@
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:auto;">
             <input type="checkbox" name="pagado" style="width:16px;height:16px;accent-color:var(--naranja);">
             Inscripción pagada
+          </label>
+        </div>
+        <div class="form-group" style="justify-content:flex-end;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:auto;">
+            <input type="checkbox" name="ocultar_categoria" style="width:16px;height:16px;accent-color:var(--naranja);">
+            Ocultar de clasificación impresa
           </label>
         </div>
       </div>
@@ -145,4 +151,26 @@
 {% else %}
 <p style="color:var(--gris);font-size:.9rem;">Aún no hay tiradores inscritos en esta competición.</p>
 {% endif %}
+{% endblock %}
+
+{% block head_extra %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
+<style>
+.ts-wrapper .ts-control{background:var(--blanco);border:1px solid var(--gris-claro);border-radius:0;font-family:'Barlow',sans-serif;font-size:.95rem;padding:7px 10px;min-height:40px;box-shadow:none;}
+.ts-wrapper.focus .ts-control{border-color:var(--naranja);box-shadow:none;}
+.ts-dropdown{border:1px solid var(--gris-claro);border-top:none;font-family:'Barlow',sans-serif;font-size:.9rem;border-radius:0;}
+.ts-dropdown .option.active,.ts-dropdown .option:hover{background:var(--naranja-suave);color:var(--negro);}
+.ts-dropdown .option.selected{background:var(--naranja);color:var(--blanco);}
+.ts-wrapper .ts-control input{font-family:'Barlow',sans-serif;}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var el = document.getElementById('sel-tirador-insc');
+  if(el) new TomSelect(el, {placeholder:'— Seleccionar —', allowEmptyOption:true});
+});
+</script>
 {% endblock %}
