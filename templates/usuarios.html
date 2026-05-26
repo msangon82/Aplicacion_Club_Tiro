@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Usuarios · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Administración</p>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+  <h1 class="pag-titulo" style="margin-bottom:0;">Gestión de usuarios</h1>
+  <a href="/usuarios/nuevo" class="btn btn-naranja">+ Nuevo usuario</a>
+</div>
+
+<div class="tabla-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Usuario</th>
+        <th>Rol</th>
+        <th>Tirador vinculado</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in usuarios %}
+    <tr>
+      <td><strong>{{ u.username }}</strong></td>
+      <td>
+        <span class="badge badge-{{ u.rol }}" style="
+          {% if u.rol == 'admin' %}background:#1a1a1a;color:var(--naranja);border:1px solid var(--naranja);
+          {% elif u.rol == 'encargado' %}background:#1a3a5c;color:#7ab3d4;
+          {% elif u.rol == 'arbitro' %}background:#2d4a1a;color:#8bc34a;
+          {% elif u.rol == 'directiva' %}background:#3a1a5c;color:#bb86fc;
+          {% else %}background:#333;color:#ccc;
+          {% endif %}
+          font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;padding:3px 10px;text-transform:uppercase;">
+          {{ rol_labels[u.rol] }}
+        </span>
+      </td>
+      <td style="font-size:.88rem;">
+        {% if u.t_apellidos %}
+          {{ u.t_apellidos }}, {{ u.t_nombre }}
+        {% else %}
+          <span style="color:var(--gris);">—</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge {{ 'badge-si' if u.activo else 'badge-no' }}">{{ 'Activo' if u.activo else 'Inactivo' }}</span>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <a href="/usuarios/{{ u.id }}/editar" class="btn btn-negro btn-sm">Editar</a>
+          {% if u.id|string != current_user.id %}
+          <form method="POST" action="/usuarios/{{ u.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar el usuario {{ u.username }}?')">
+            <button type="submit" class="btn btn-rojo btn-sm">✕</button>
+          </form>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:28px;">No hay usuarios registrados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · CTO Cartagena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--negro:#0d0d0d;--grafito:#1a1a1a;--naranja:#e85d04;--naranja-claro:#ff7c35;--naranja-suave:#fff3ec;--crema:#f7f4f0;--blanco:#ffffff;--gris:#7a7a7a;--gris-claro:#e5e0d8;--rojo:#c0392b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Barlow',sans-serif;background:var(--negro);color:var(--blanco);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.login-box{background:var(--grafito);border:1px solid #2a2a2a;border-top:3px solid var(--naranja);padding:40px 36px;width:100%;max-width:380px;}
+.login-brand{text-align:center;margin-bottom:32px;}
+.login-brand img{width:56px;margin-bottom:12px;}
+.login-brand .title{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;letter-spacing:.04em;}
+.login-brand .title span{color:var(--naranja);}
+.login-brand .sub{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gris);margin-top:4px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gris);margin-bottom:6px;}
+.form-group input{width:100%;padding:10px 12px;background:#111;border:1px solid #333;color:var(--blanco);font-family:'Barlow',sans-serif;font-size:.95rem;outline:none;transition:border-color .15s;}
+.form-group input:focus{border-color:var(--naranja);}
+.btn-login{width:100%;padding:12px;background:var(--naranja);color:var(--blanco);border:none;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:background .15s;}
+.btn-login:hover{background:var(--naranja-claro);}
+.error-msg{background:#2a0a0a;border-left:3px solid var(--rojo);color:#e87070;padding:10px 14px;font-size:.84rem;margin-bottom:20px;}
+footer{color:#444;font-size:.72rem;margin-top:28px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="login-brand">
+    <img src="/static/escudo.png" alt="Escudo CTO Cartagena">
+    <div class="title">C.T.O. <span>Cartagena</span></div>
+    <div class="sub">Sistema de gestión</div>
+  </div>
+
+  {% if error %}
+  <div class="error-msg">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST">
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" name="username" autocomplete="username" autofocus required>
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn-login">Entrar</button>
+  </form>
+</div>
+<footer>© 2026 Club de Tiro Olímpico de Cartagena</footer>
+</body>
+</html>

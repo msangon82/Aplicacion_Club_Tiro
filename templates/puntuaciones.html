@@ -50,7 +50,8 @@
                value="{{ row['d' ~ j] if row and row['d' ~ j] != 0 else '' }}"
                maxlength="4"
                autocomplete="off"
-               placeholder="—">
+               placeholder="—"
+               {{ 'readonly style="background:#f5f5f5;color:#999;cursor:not-allowed;"' if not can_edit }}>
       </td>
       {% endfor %}
       <td>

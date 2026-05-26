@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if u else 'Nuevo' }} usuario · CTO Cartagena{% endblock %}
+{% block contenido %}
+<p class="pag-etiqueta">Administración · <a href="/usuarios" style="color:var(--naranja);text-decoration:none;">Usuarios</a></p>
+<h1 class="pag-titulo">{{ 'Editar usuario: ' + u.username if u else 'Nuevo usuario' }}</h1>
+
+{% if error %}
+<div style="background:#fff3ec;border-left:3px solid var(--naranja);padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:var(--rojo);">
+  {{ error }}
+</div>
+{% endif %}
+
+<div class="form-card">
+  <form method="POST">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Usuario *</label>
+        <input type="text" name="username" required value="{{ u.username if u else '' }}" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>{{ 'Nueva contraseña (dejar vacío para no cambiar)' if u else 'Contraseña *' }}</label>
+        <input type="password" name="password" {{ 'required' if not u }} autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Rol *</label>
+        <select name="rol" id="sel-rol" required>
+          {% for r in roles %}
+          <option value="{{ r }}" {{ 'selected' if u and u.rol==r }}>{{ rol_labels[r] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" id="grupo-tirador">
+        <label>Tirador vinculado <span style="color:var(--gris);font-size:.75rem;">(solo rol Tirador)</span></label>
+        <select name="tirador_id">
+          <option value="">— Sin vincular —</option>
+          {% for t in tiradores %}
+          <option value="{{ t.id }}" {{ 'selected' if u and u.tirador_id==t.id }}>{{ t.apellidos }}, {{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if u %}
+      <div class="form-group" style="grid-column:1/-1;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="activo" {{ 'checked' if u.activo }} style="width:16px;height:16px;accent-color:var(--naranja);">
+          Usuario activo
+        </label>
+      </div>
+      {% endif %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-naranja">{{ 'Guardar cambios' if u else 'Crear usuario' }}</button>
+      <a href="/usuarios" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sel = document.getElementById('sel-rol');
+const grp = document.getElementById('grupo-tirador');
+function toggleTirador(){
+  grp.style.display = sel.value === 'tirador' ? '' : 'none';
+}
+sel.addEventListener('change', toggleTirador);
+toggleTirador();
+</script>
+{% endblock %}

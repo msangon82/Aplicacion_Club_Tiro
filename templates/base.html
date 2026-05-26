@@ -205,11 +205,27 @@ footer span{color:var(--naranja-claro);}
     <div class="nav-menu" id="navMenu">
       <ul>
         <li><a href="/" class="{% if request.endpoint=='index' %}activo{% endif %}">Inicio</a></li>
+        {% if current_user.is_authenticated and current_user.rol in ('admin','encargado','directiva') %}
         <li><a href="/tiradores" class="{% if 'tirador' in (request.endpoint or '') %}activo{% endif %}">Tiradores</a></li>
+        {% endif %}
         <li><a href="/competiciones" class="{% if 'competicion' in (request.endpoint or '') or 'puntuacion' in (request.endpoint or '') %}activo{% endif %}">Competiciones</a></li>
+        {% if current_user.is_authenticated and current_user.rol in ('admin','encargado','directiva') %}
         <li><a href="/municion" class="{% if 'municion' in (request.endpoint or '') %}activo{% endif %}">Munición</a></li>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.rol == 'admin' %}
+        <li><a href="/usuarios" class="{% if 'usuario' in (request.endpoint or '') %}activo{% endif %}">Usuarios</a></li>
+        {% endif %}
       </ul>
     </div>
+    {% if current_user.is_authenticated %}
+    <div style="display:flex;align-items:center;gap:12px;padding:0 16px;font-size:.78rem;color:#aaa;">
+      <span style="font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;">
+        {{ current_user.username }}
+        <span style="color:var(--naranja);margin-left:4px;">· {{ current_user.rol|capitalize }}</span>
+      </span>
+      <a href="/logout" style="color:#aaa;text-decoration:none;border:1px solid #444;padding:4px 10px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;">Salir</a>
+    </div>
+    {% endif %}
   </div>
 </nav>
 <div class="contenido">
