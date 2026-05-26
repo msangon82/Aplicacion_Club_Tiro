@@ -19,15 +19,7 @@
       <td><strong>{{ c.nombre }}</strong></td>
       <td>{{ c.fecha or '—' }}</td>
       <td>{{ c.modalidad }}</td>
-      <td>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <a href="/competiciones/{{ c.id }}" class="btn btn-naranja btn-sm">Gestionar</a>
-          <a href="/competiciones/{{ c.id }}/imprimir" target="_blank"
-             class="btn btn-negro btn-sm" title="Imprimir clasificación por categoría">
-            🖨 Clasificación
-          </a>
-        </div>
-      </td>
+      <td><a href="/competiciones/{{ c.id }}" class="btn btn-naranja btn-sm">Gestionar</a></td>
     </tr>
     {% else %}
     <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:28px;">

@@ -12,7 +12,7 @@
 </div>
 {% if comp.fecha %}<p style="color:var(--gris);margin-bottom:24px;font-size:.9rem;">📅 {{ comp.fecha }}</p>{% else %}<div style="margin-bottom:24px;"></div>{% endif %}
 
-<!-- ── INSCRIBIR TIRADOR ── -->
+<!-- Inscribir tirador -->
 <details style="margin-bottom:28px;">
   <summary style="cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:.85rem;
     letter-spacing:.15em;text-transform:uppercase;color:var(--naranja);
@@ -22,56 +22,21 @@
   </summary>
   <div class="form-card" style="border-top:none;margin-top:0;">
     {% if disponibles %}
-    <form method="POST" action="/competiciones/{{ comp.id }}/inscribir" id="formInscribir">
+    <form method="POST" action="/competiciones/{{ comp.id }}/inscribir">
       <div class="form-grid">
-
-        <!-- Selector con búsqueda -->
-        <div class="form-group" style="position:relative;">
+        <div class="form-group">
           <label>Tirador *</label>
-
-          <!-- Campo de búsqueda visible -->
-          <input
-            type="text"
-            id="buscarTirador"
-            placeholder="Escribe nombre, apellidos o categoría…"
-            autocomplete="off"
-            style="width:100%;"
-          >
-
-          <!-- Lista desplegable de resultados -->
-          <div id="listaTiradores" style="
-            display:none;
-            position:absolute;
-            top:100%;left:0;right:0;
-            background:var(--blanco);
-            border:1px solid var(--naranja);
-            border-top:none;
-            max-height:260px;
-            overflow-y:auto;
-            z-index:500;
-            box-shadow:0 4px 12px rgba(0,0,0,.12);
-          "></div>
-
-          <!-- Input oculto que se envía al servidor -->
-          <input type="hidden" name="tirador_id" id="tiradorId" required>
-
-          <!-- Nombre seleccionado (feedback visual) -->
-          <div id="tiradorSeleccionado" style="
-            display:none;
-            margin-top:6px;
-            padding:7px 12px;
-            background:var(--naranja-suave);
-            border-left:3px solid var(--naranja);
-            font-size:.84rem;
-            font-weight:500;
-          "></div>
+          <select name="tirador_id" required>
+            <option value="">— Seleccionar —</option>
+            {% for t in disponibles %}
+            <option value="{{ t.id }}">{{ t.apellidos }}, {{ t.nombre }} ({{ t.categoria }})</option>
+            {% endfor %}
+          </select>
         </div>
-
         <div class="form-group">
           <label>Puesto / Línea *</label>
           <input type="number" name="puesto" required min="1" max="999" placeholder="Ej: 130">
         </div>
-
         <div class="form-group" style="justify-content:flex-end;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:auto;">
             <input type="checkbox" name="pagado" style="width:16px;height:16px;accent-color:var(--naranja);">
@@ -79,22 +44,17 @@
           </label>
         </div>
       </div>
-
       <div class="form-actions">
-        <button type="submit" class="btn btn-naranja" id="btnInscribir" disabled>Inscribir</button>
-        <span id="msgSelecciona" style="font-size:.82rem;color:var(--gris);">
-          Selecciona un tirador de la lista
-        </span>
+        <button type="submit" class="btn btn-naranja">Inscribir</button>
       </div>
     </form>
-
     {% else %}
     <p style="color:var(--gris);font-size:.9rem;">Todos los tiradores ya están inscritos.</p>
     {% endif %}
   </div>
 </details>
 
-<!-- ── TABLA DE INSCRITOS ── -->
+<!-- Tabla de inscritos -->
 <p class="pag-etiqueta" style="margin-bottom:14px;">Inscritos ({{ inscripciones|length }})</p>
 {% if inscripciones %}
 <div class="tabla-wrapper" style="margin-bottom:40px;">
@@ -129,7 +89,6 @@
   </table>
 </div>
 
-<!-- ── CLASIFICACIÓN ── -->
 {% if clasificacion %}
 <p class="pag-etiqueta" style="margin-bottom:14px;">Clasificación general</p>
 <div class="tabla-wrapper" style="margin-bottom:32px;">
@@ -185,181 +144,5 @@
 
 {% else %}
 <p style="color:var(--gris);font-size:.9rem;">Aún no hay tiradores inscritos en esta competición.</p>
-{% endif %}
-{% endblock %}
-
-{% block scripts %}
-{% if disponibles %}
-<script>
-// ── Datos de tiradores disponibles (inyectados desde Jinja) ──
-const TIRADORES = [
-  {% for t in disponibles %}
-  {
-    id:        {{ t.id }},
-    texto:     "{{ t.apellidos }}, {{ t.nombre }}",
-    categoria: "{{ t.categoria }}",
-    club:      "{{ t.club or '' }}",
-    licencia:  "{{ t.licencia or '' }}",
-    busqueda:  "{{ (t.apellidos + ' ' + t.nombre + ' ' + (t.categoria or '') + ' ' + (t.club or '') + ' ' + (t.licencia or '')) | lower }}"
-  }{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-
-const inputBuscar   = document.getElementById('buscarTirador');
-const lista         = document.getElementById('listaTiradores');
-const inputOculto   = document.getElementById('tiradorId');
-const divSeleccion  = document.getElementById('tiradorSeleccionado');
-const btnInscribir  = document.getElementById('btnInscribir');
-const msgSelecciona = document.getElementById('msgSelecciona');
-
-let indiceFoco = -1;   // para navegación con teclado
-
-// ── Renderiza los ítems filtrados ──
-function renderLista(filtrados) {
-  lista.innerHTML = '';
-  indiceFoco = -1;
-
-  if (filtrados.length === 0) {
-    lista.innerHTML = '<div style="padding:12px 14px;color:var(--gris);font-size:.86rem;">Sin resultados</div>';
-    lista.style.display = 'block';
-    return;
-  }
-
-  filtrados.forEach((t, idx) => {
-    const item = document.createElement('div');
-    item.dataset.id    = t.id;
-    item.dataset.texto = t.texto;
-    item.dataset.idx   = idx;
-    item.style.cssText = `
-      padding: 10px 14px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--gris-claro);
-      font-size: .88rem;
-      transition: background .15s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    `;
-
-    const nombre = document.createElement('span');
-    nombre.style.fontWeight = '500';
-    nombre.textContent = t.texto;
-
-    const meta = document.createElement('span');
-    meta.style.cssText = 'font-size:.75rem;color:var(--gris);white-space:nowrap;';
-    meta.textContent = [t.categoria, t.club].filter(Boolean).join(' · ');
-
-    item.appendChild(nombre);
-    item.appendChild(meta);
-
-    item.addEventListener('mouseenter', () => resaltarItem(idx));
-    item.addEventListener('click',      () => seleccionarItem(t));
-    lista.appendChild(item);
-  });
-
-  lista.style.display = 'block';
-}
-
-// ── Resalta un ítem en la lista ──
-function resaltarItem(idx) {
-  [...lista.children].forEach((el, i) => {
-    el.style.background = i === idx
-      ? 'var(--naranja-suave)'
-      : 'var(--blanco)';
-    el.style.borderLeft = i === idx
-      ? '3px solid var(--naranja)'
-      : '3px solid transparent';
-  });
-  indiceFoco = idx;
-}
-
-// ── Confirma la selección de un tirador ──
-function seleccionarItem(t) {
-  inputOculto.value         = t.id;
-  inputBuscar.value         = t.texto;
-  divSeleccion.textContent  = `✓ ${t.texto}${t.licencia ? ' · Licencia: ' + t.licencia : ''}`;
-  divSeleccion.style.display = 'block';
-  btnInscribir.disabled     = false;
-  msgSelecciona.style.display = 'none';
-  lista.style.display        = 'none';
-  inputBuscar.style.borderColor = 'var(--verde)';
-}
-
-// ── Limpia la selección ──
-function limpiarSeleccion() {
-  inputOculto.value          = '';
-  divSeleccion.style.display = 'none';
-  btnInscribir.disabled      = true;
-  msgSelecciona.style.display = 'inline';
-  inputBuscar.style.borderColor = '';
-}
-
-// ── Eventos del campo de búsqueda ──
-inputBuscar.addEventListener('input', () => {
-  limpiarSeleccion();
-  const q = inputBuscar.value.trim().toLowerCase();
-  if (q.length === 0) {
-    // Sin texto → mostrar todos
-    renderLista(TIRADORES);
-  } else {
-    const filtrados = TIRADORES.filter(t => t.busqueda.includes(q));
-    renderLista(filtrados);
-  }
-});
-
-inputBuscar.addEventListener('focus', () => {
-  const q = inputBuscar.value.trim().toLowerCase();
-  const filtrados = q ? TIRADORES.filter(t => t.busqueda.includes(q)) : TIRADORES;
-  renderLista(filtrados);
-});
-
-// ── Navegación con teclado ──
-inputBuscar.addEventListener('keydown', e => {
-  const items = [...lista.children];
-  if (!items.length || lista.style.display === 'none') return;
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    const next = Math.min(indiceFoco + 1, items.length - 1);
-    resaltarItem(next);
-    items[next].scrollIntoView({ block: 'nearest' });
-
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    const prev = Math.max(indiceFoco - 1, 0);
-    resaltarItem(prev);
-    items[prev].scrollIntoView({ block: 'nearest' });
-
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (indiceFoco >= 0 && items[indiceFoco]) {
-      const id    = items[indiceFoco].dataset.id;
-      const texto = items[indiceFoco].dataset.texto;
-      const t     = TIRADORES.find(t => String(t.id) === id);
-      if (t) seleccionarItem(t);
-    }
-
-  } else if (e.key === 'Escape') {
-    lista.style.display = 'none';
-  }
-});
-
-// ── Cerrar la lista al hacer clic fuera ──
-document.addEventListener('click', e => {
-  if (!inputBuscar.contains(e.target) && !lista.contains(e.target)) {
-    lista.style.display = 'none';
-  }
-});
-
-// ── Validar antes de enviar ──
-document.getElementById('formInscribir').addEventListener('submit', e => {
-  if (!inputOculto.value) {
-    e.preventDefault();
-    inputBuscar.focus();
-    inputBuscar.style.borderColor = 'var(--rojo)';
-  }
-});
-</script>
 {% endif %}
 {% endblock %}

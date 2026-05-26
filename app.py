@@ -60,8 +60,8 @@ def init_db():
 
             CREATE TABLE IF NOT EXISTS puntuaciones (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                inscripcion_id REAL NOT NULL,
-                serie          REAL NOT NULL,
+                inscripcion_id INTEGER NOT NULL,
+                serie          INTEGER NOT NULL,
                 d1 REAL DEFAULT 0, d2 REAL DEFAULT 0, d3 REAL DEFAULT 0,
                 d4 REAL DEFAULT 0, d5 REAL DEFAULT 0,
                 FOREIGN KEY (inscripcion_id) REFERENCES inscripciones(id),
@@ -125,22 +125,16 @@ def calcular_suma_serie(d1, d2, d3, d4, d5):
     total = 0
     for v in [d1, d2, d3, d4, d5]:
         try:
-            s = str(v).strip().lower()
-            if s == 'x':
-                total += 10
-            elif s == 'v':
-                total += 5.01
-            else:
-                total += float(v)
+            total += float(v) if str(v).lower() != 'x' else 10
         except:
             pass
-    return round(total, 2)
+    return total
 
 def calcular_total_inscripcion(insc_id, db):
     filas = db.execute(
         "SELECT d1,d2,d3,d4,d5 FROM puntuaciones WHERE inscripcion_id=?", (insc_id,)
     ).fetchall()
-    return round(sum(calcular_suma_serie(r["d1"],r["d2"],r["d3"],r["d4"],r["d5"]) for r in filas), 2)
+    return sum(calcular_suma_serie(r["d1"],r["d2"],r["d3"],r["d4"],r["d5"]) for r in filas)
 
 def get_stocks(db):
     rows = db.execute("SELECT calibre, stock FROM municion_stock ORDER BY calibre").fetchall()
@@ -351,7 +345,7 @@ def inscripcion_eliminar(iid):
 # ─────────────────────────────────────────
 #  PUNTUACIONES
 # ─────────────────────────────────────────
-@app.route("/puntuaciones/<float:iid>", methods=["GET","POST"])
+@app.route("/puntuaciones/<int:iid>", methods=["GET","POST"])
 def puntuaciones(iid):
     db   = get_db()
     insc = db.execute("""
@@ -383,14 +377,9 @@ def puntuaciones(iid):
         series[row["serie"]] = row
     total = calcular_total_inscripcion(iid, db)
 
-    resp = app.make_response(render_template("puntuaciones.html",
+    return render_template("puntuaciones.html",
         insc=insc, series=series, total=total,
-        series_150=SERIES_150, series_20=SERIES_20))
-    # Forzar al navegador a NO cachear esta página
-    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    resp.headers["Pragma"] = "no-cache"
-    resp.headers["Expires"] = "0"
-    return resp
+        series_150=SERIES_150, series_20=SERIES_20)
 
 @app.route("/api/puntuacion", methods=["POST"])
 def api_puntuacion():
@@ -398,17 +387,7 @@ def api_puntuacion():
     iid   = data["inscripcion_id"]
     serie = data["serie"]
     campo = data["campo"]
-    # Convertir letras especiales a valor numérico antes de guardar en BD REAL
-    raw = str(data["valor"]).strip().lower()
-    if raw == "x":
-        valor = 10
-    elif raw == "v":
-        valor = 5.01
-    else:
-        try:
-            valor = float(raw) if raw else 0
-        except:
-            valor = 0
+    valor = data["valor"]
     db    = get_db()
     db.execute(f"""
         INSERT INTO puntuaciones (inscripcion_id,serie,{campo})

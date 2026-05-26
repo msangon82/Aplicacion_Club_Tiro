@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Puntuaciones · {{ insc.apellidos }} · CTO Cartagena{% endblock %}
 {% block contenido %}
-<p class="pag-etiqueta">Competición · <a href="/competiciones/{{ insc.cid }}" style="color:var(--naranja);text-decoration:none;">{{ insc.comp_nombre }}</a> · <span style="color:var(--verde);font-weight:700;">v2-XV</span></p>
+<p class="pag-etiqueta">Competición · <a href="/competiciones/{{ insc.cid }}" style="color:var(--naranja);text-decoration:none;">{{ insc.comp_nombre }}</a></p>
 <h1 class="pag-titulo">Puntuaciones: {{ insc.apellidos }}, {{ insc.nombre }}</h1>
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;align-items:center;">
@@ -14,9 +14,11 @@
   </div>
 </div>
 
+<!-- Instrucciones -->
 <div style="background:var(--blanco);border:1px solid var(--gris-claro);border-left:3px solid var(--naranja);
      padding:12px 16px;margin-bottom:20px;font-size:.84rem;color:var(--gris);">
-  💡 Usa <strong>X</strong> = 10 puntos &nbsp;·&nbsp; <strong>V</strong> = 5,01 puntos &nbsp;·&nbsp; <strong>1–9</strong> = valor directo. Los cambios se guardan automáticamente.
+  💡 Introduce cada disparo. Usa <strong>X</strong> para contar 10 puntos (valor X). 
+  Los cambios se guardan automáticamente al salir del campo.
 </div>
 
 <div class="tabla-wrapper">
@@ -45,14 +47,25 @@
                data-serie="{{ s }}"
                data-campo="d{{ j }}"
                data-insc="{{ insc.id }}"
-               value="{% if row %}{% set v = row['d' ~ j] %}{% if v == 10 %}X{% elif v == 5.01 %}V{% elif v and v != 0 %}{{ v|int }}{% endif %}{% endif %}"
+               value="{{ row['d' ~ j] if row and row['d' ~ j] != 0 else '' }}"
                maxlength="4"
                autocomplete="off"
                placeholder="—">
       </td>
       {% endfor %}
       <td>
-        <span class="suma-serie" id="suma_s{{ s }}">0</span>
+        <span class="suma-serie" id="suma_s{{ s }}">
+          {% if row %}
+            {% set suma = 0 %}
+            {% for j in range(1,6) %}
+              {% set v = row['d' ~ j] %}
+              {% if v is not none %}
+                {% if v|string|lower == 'x' %}{% set suma = suma + 10 %}{% else %}{% set suma = suma + (v|float) %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ suma|int }}
+          {% else %}0{% endif %}
+        </span>
       </td>
     </tr>
     {% if s == 4 %}
@@ -61,7 +74,19 @@
           font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:#aaa;">
         Parcial 150&quot; (Series 1–4)
       </td>
-      <td><span class="parcial-box" id="parcial_150">0</span></td>
+      <td>
+        <span class="parcial-box" id="parcial_150">
+          {% set p = 0 %}
+          {% for ss in range(1,5) %}
+            {% set r = series.get(ss) %}
+            {% if r %}{% for j in range(1,6) %}
+              {% set v = r['d'~j] %}
+              {% if v is not none %}{% if v|string|lower=='x' %}{% set p=p+10 %}{% else %}{% set p=p+(v|float) %}{% endif %}{% endif %}
+            {% endfor %}{% endif %}
+          {% endfor %}
+          {{ p|int }}
+        </span>
+      </td>
     </tr>
     {% elif s == 10 %}
     <tr style="background:var(--negro);">
@@ -69,7 +94,19 @@
           font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:#aaa;">
         Parcial 20&quot; (Series 5–10)
       </td>
-      <td><span class="parcial-box" id="parcial_20">0</span></td>
+      <td>
+        <span class="parcial-box" id="parcial_20">
+          {% set p = 0 %}
+          {% for ss in range(5,11) %}
+            {% set r = series.get(ss) %}
+            {% if r %}{% for j in range(1,6) %}
+              {% set v = r['d'~j] %}
+              {% if v is not none %}{% if v|string|lower=='x' %}{% set p=p+10 %}{% else %}{% set p=p+(v|float) %}{% endif %}{% endif %}
+            {% endfor %}{% endif %}
+          {% endfor %}
+          {{ p|int }}
+        </span>
+      </td>
     </tr>
     {% endif %}
     {% endfor %}
@@ -87,121 +124,73 @@
 <script>
 const INSC_ID = {{ insc.id }};
 
-// ── Valores válidos: 1-9, X=10, V=5.01 ──
 function parseVal(v){
   if(!v || v.trim()==='') return 0;
-  const u = v.trim().toLowerCase();
-  if(u === 'x') return 10;
-  if(u === 'v') return 5.01;
+  if(v.trim().toLowerCase()==='x') return 10;
   const n = parseFloat(v);
-  if(!isNaN(n) && n >= 1 && n <= 9) return n;
-  return 0;
+  return isNaN(n) ? 0 : n;
 }
 
-// ── Solo permite 1-9, X, V ──
-function sanitizar(inp){
-  const v = inp.value.trim();
-  if(v === '') return;
-  if(/^[xX]$/.test(v)){ inp.value = 'X'; return; }
-  if(/^[vV]$/.test(v)){ inp.value = 'V'; return; }
-  if(/^[1-9]$/.test(v)) return;
-  inp.value = '';
-}
-
-// ── Formato: mostrar decimales con coma solo si los hay ──
-function fmt(n){
-  n = Math.round(n * 100) / 100;  // evitar 24.009999...
-  return n % 1 === 0 ? String(n) : n.toFixed(2).replace('.', ',');
-}
-
-// ── Recalcula la suma de una fila y la pinta ──
 function recalcFila(serie){
   let suma = 0;
-  for(let j=1; j<=5; j++){
+  for(let j=1;j<=5;j++){
     const inp = document.getElementById(`s${serie}_d${j}`);
     if(inp) suma += parseVal(inp.value);
   }
-  suma = Math.round(suma * 100) / 100;
   const el = document.getElementById(`suma_s${serie}`);
-  if(el) el.textContent = fmt(suma);
+  if(el) el.textContent = suma % 1 === 0 ? suma : suma.toFixed(1);
   return suma;
 }
 
-// ── Recalcula todos los parciales y el total ──
-function recalcTodo(){
-  let p150 = 0, p20 = 0;
-  for(let s=1;  s<=4;  s++) p150 += recalcFila(s);
-  for(let s=5;  s<=10; s++) p20  += recalcFila(s);
-  p150 = Math.round(p150 * 100) / 100;
-  p20  = Math.round(p20  * 100) / 100;
-  const total = Math.round((p150 + p20) * 100) / 100;
+function recalcParciales(){
+  let p150=0, p20=0;
+  for(let s=1;s<=4;s++) p150 += recalcFila(s);
+  for(let s=5;s<=10;s++) p20 += recalcFila(s);
   const e150 = document.getElementById('parcial_150');
   const e20  = document.getElementById('parcial_20');
-  const et   = document.getElementById('totalGeneral');
-  if(e150) e150.textContent = fmt(p150);
-  if(e20)  e20.textContent  = fmt(p20);
-  if(et)   et.textContent   = fmt(total);
+  if(e150) e150.textContent = p150%1===0 ? p150 : p150.toFixed(1);
+  if(e20)  e20.textContent  = p20%1===0  ? p20  : p20.toFixed(1);
+  const total = p150+p20;
+  const et = document.getElementById('totalGeneral');
+  if(et) et.textContent = total%1===0 ? total : total.toFixed(1);
 }
 
-// ── Guarda una celda en el servidor ──
 async function guardarCelda(inp){
   const serie = inp.dataset.serie;
   const campo = inp.dataset.campo;
-  const raw = inp.value.trim();
-
-  const valor =
-    /^[xX]$/.test(raw) ? '10' :
-    /^[vV]$/.test(raw) ? '5.01' :
-    (raw || '0');
+  const valor = inp.value.trim() || '0';
   inp.classList.add('modificado');
-  try{
-    const r = await fetch('/api/puntuacion', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        inscripcion_id: INSC_ID,
-        serie: parseFloat(serie),
-        campo,
-        valor
-      })
+  try {
+    const r = await fetch('/api/puntuacion',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({inscripcion_id:INSC_ID, serie:parseInt(serie), campo, valor})
     });
     if(r.ok){
+      const data = await r.json();
       const est = document.getElementById('estadoGuardado');
-      if(est){ est.style.display='inline'; setTimeout(()=>est.style.display='none', 1800); }
+      if(est){ est.style.display='inline'; setTimeout(()=>est.style.display='none',1800); }
     }
   } catch(e){ console.warn('Error guardando:', e); }
 }
 
-// ── Registrar eventos en cada celda ──
-document.querySelectorAll('.punt-input').forEach(inp => {
-
-  // Al escribir: sanitizar y recalcular visual inmediato
-  inp.addEventListener('input', () => {
-    sanitizar(inp);
-    recalcTodo();
+document.querySelectorAll('.punt-input').forEach(inp=>{
+  inp.addEventListener('input', ()=>{
+    recalcParciales();
   });
-
-  // Al salir del campo (por Tab, click fuera, etc.): guardar en servidor
-  inp.addEventListener('blur', () => {
-    sanitizar(inp);
-    recalcTodo();
+  inp.addEventListener('change', ()=>{
+    recalcParciales();
     guardarCelda(inp);
   });
-
-  // Enter: guardar y pasar a la siguiente celda
-  inp.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){
+  // Navegación con Enter/Tab entre celdas
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
       e.preventDefault();
-      guardarCelda(inp);   // guardar antes de mover el foco
       const all = [...document.querySelectorAll('.punt-input')];
       const idx = all.indexOf(inp);
-      if(idx < all.length - 1) all[idx + 1].focus();
+      if(idx < all.length-1) all[idx+1].focus();
     }
   });
 });
-
-// ── Al cargar la página: recalcular todo desde los valores de los inputs ──
-// (evita depender de Jinja para los totales)
-document.addEventListener('DOMContentLoaded', recalcTodo);
 </script>
 {% endblock %}
