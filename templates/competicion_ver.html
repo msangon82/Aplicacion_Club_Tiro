@@ -66,7 +66,7 @@
 <div class="tabla-wrapper" style="margin-bottom:40px;">
   <table>
     <thead><tr>
-      <th>Puesto</th><th>Nombre</th><th>DNI</th><th>Licencia</th>
+      <th>Puesto</th><th>Nombre</th>{% if current_user.rol != 'tirador' %}<th>DNI</th>{% endif %}<th>Licencia</th>
       <th>Club</th><th>Categoría</th><th>Pagado</th><th>Total</th><th>Acciones</th>
     </tr></thead>
     <tbody>
@@ -74,7 +74,7 @@
     <tr>
       <td class="num">{{ i.puesto }}</td>
       <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
-      <td style="font-family:'Barlow Condensed',sans-serif;">{{ i.dni }}</td>
+      {% if current_user.rol != 'tirador' %}<td style="font-family:'Barlow Condensed',sans-serif;">{{ i.dni }}</td>{% endif %}
       <td class="num">{{ i.licencia or '—' }}</td>
       <td>{{ i.club }}</td>
       <td><span class="badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
