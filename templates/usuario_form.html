@@ -15,7 +15,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label>Usuario *</label>
-        <input type="text" name="username" required value="{{ u.username if u else '' }}" autocomplete="off">
+        <input type="text" name="username" id="inp-username" required value="{{ u.username if u else '' }}" autocomplete="off" style="text-transform:lowercase;">
       </div>
       <div class="form-group">
         <label>{{ 'Nueva contraseña (dejar vacío para no cambiar)' if u else 'Contraseña *' }}</label>
@@ -31,7 +31,7 @@
       </div>
       <div class="form-group" id="grupo-tirador">
         <label>Tirador vinculado <span style="color:var(--gris);font-size:.75rem;">(solo rol Tirador)</span></label>
-        <select name="tirador_id">
+        <select name="tirador_id" id="sel-tirador-usuario">
           <option value="">— Sin vincular —</option>
           {% for t in tiradores %}
           <option value="{{ t.id }}" {{ 'selected' if u and u.tirador_id==t.id }}>{{ t.apellidos }}, {{ t.nombre }}</option>
@@ -55,14 +55,39 @@
 </div>
 {% endblock %}
 
+{% block head_extra %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
+<style>
+.ts-wrapper .ts-control{background:var(--blanco);border:1px solid var(--gris-claro);border-radius:0;font-family:'Barlow',sans-serif;font-size:.95rem;padding:7px 10px;min-height:40px;box-shadow:none;}
+.ts-wrapper.focus .ts-control{border-color:var(--naranja);box-shadow:none;}
+.ts-dropdown{border:1px solid var(--gris-claro);border-top:none;font-family:'Barlow',sans-serif;font-size:.9rem;border-radius:0;}
+.ts-dropdown .option.active,.ts-dropdown .option:hover{background:var(--naranja-suave);color:var(--negro);}
+.ts-dropdown .option.selected{background:var(--naranja);color:var(--blanco);}
+</style>
+{% endblock %}
+
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 const sel = document.getElementById('sel-rol');
 const grp = document.getElementById('grupo-tirador');
+let tsInstance = null;
+
 function toggleTirador(){
-  grp.style.display = sel.value === 'tirador' ? '' : 'none';
+  const esTirador = sel.value === 'tirador';
+  grp.style.display = esTirador ? '' : 'none';
+  if(esTirador && !tsInstance){
+    tsInstance = new TomSelect('#sel-tirador-usuario', {placeholder:'— Sin vincular —', allowEmptyOption:true});
+  }
 }
 sel.addEventListener('change', toggleTirador);
 toggleTirador();
+
+// Forzar minúsculas en tiempo real
+document.getElementById('inp-username').addEventListener('input', function(){
+  const pos = this.selectionStart;
+  this.value = this.value.toLowerCase();
+  this.setSelectionRange(pos, pos);
+});
 </script>
 {% endblock %}

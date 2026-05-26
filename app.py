@@ -262,7 +262,7 @@ def usuario_nuevo():
     tiradores = db.execute("SELECT id,nombre,apellidos FROM tiradores ORDER BY apellidos").fetchall()
     error     = None
     if request.method == "POST":
-        username = request.form["username"].strip()
+        username = request.form["username"].strip().lower()
         password = request.form["password"]
         rol      = request.form["rol"]
         tid      = request.form.get("tirador_id") or None
@@ -291,7 +291,7 @@ def usuario_editar(uid):
     tiradores = db.execute("SELECT id,nombre,apellidos FROM tiradores ORDER BY apellidos").fetchall()
     error     = None
     if request.method == "POST":
-        username = request.form["username"].strip()
+        username = request.form["username"].strip().lower()
         rol      = request.form["rol"]
         tid      = request.form.get("tirador_id") or None
         activo   = 1 if request.form.get("activo") else 0
