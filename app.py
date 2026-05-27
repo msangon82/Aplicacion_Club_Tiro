@@ -138,6 +138,7 @@ def init_db():
         # Migraciones para bases de datos existentes
         for sql in [
             "ALTER TABLE inscripciones ADD COLUMN ocultar_categoria INTEGER DEFAULT 0",
+            "ALTER TABLE inscripciones ADD COLUMN categoria TEXT DEFAULT ''",
         ]:
             try:
                 db.execute(sql)
@@ -348,19 +349,14 @@ def index():
 def tiradores():
     db  = get_db()
     q   = request.args.get("q","").strip()
-    cat = request.args.get("cat","")
     query  = "SELECT * FROM tiradores WHERE 1=1"
     params = []
     if q:
         query += " AND (nombre LIKE ? OR apellidos LIKE ? OR dni LIKE ? OR licencia LIKE ?)"
         params += [f"%{q}%"]*4
-    if cat:
-        query += " AND categoria=?"
-        params.append(cat)
     query += " ORDER BY apellidos, nombre"
     lista = db.execute(query, params).fetchall()
-    return render_template("tiradores.html", tiradores=lista,
-        categorias=CATEGORIAS, q=q, cat=cat)
+    return render_template("tiradores.html", tiradores=lista, q=q)
 
 @app.route("/tiradores/nuevo", methods=["GET","POST"])
 @role_required("admin","encargado")
@@ -369,16 +365,15 @@ def tirador_nuevo():
         db = get_db()
         try:
             db.execute(
-                "INSERT INTO tiradores (nombre,apellidos,dni,licencia,club,categoria) VALUES (?,?,?,?,?,?)",
-                (request.form["nombre"], request.form["apellidos"],
-                 request.form["dni"],    request.form["licencia"],
-                 request.form["club"],   request.form["categoria"]))
+                "INSERT INTO tiradores (nombre,apellidos,dni,licencia,club) VALUES (?,?,?,?,?)",
+                (request.form["nombre"].strip().title(), request.form["apellidos"].strip().title(),
+                 request.form["dni"].strip().upper(),    request.form["licencia"].strip(),
+                 request.form["club"].strip().title()))
             db.commit()
             return redirect(url_for("tiradores"))
         except sqlite3.IntegrityError:
-            return render_template("tirador_form.html",
-                categorias=CATEGORIAS, error="El DNI ya existe en la base de datos.", t=None)
-    return render_template("tirador_form.html", categorias=CATEGORIAS, error=None, t=None)
+            return render_template("tirador_form.html", error="El DNI ya existe en la base de datos.", t=None)
+    return render_template("tirador_form.html", error=None, t=None)
 
 @app.route("/tiradores/<int:tid>/editar", methods=["GET","POST"])
 @role_required("admin","encargado")
@@ -390,16 +385,15 @@ def tirador_editar(tid):
     if request.method == "POST":
         try:
             db.execute(
-                "UPDATE tiradores SET nombre=?,apellidos=?,dni=?,licencia=?,club=?,categoria=? WHERE id=?",
-                (request.form["nombre"], request.form["apellidos"],
-                 request.form["dni"],    request.form["licencia"],
-                 request.form["club"],   request.form["categoria"], tid))
+                "UPDATE tiradores SET nombre=?,apellidos=?,dni=?,licencia=?,club=? WHERE id=?",
+                (request.form["nombre"].strip().title(), request.form["apellidos"].strip().title(),
+                 request.form["dni"].strip().upper(),    request.form["licencia"].strip(),
+                 request.form["club"].strip().title(),   tid))
             db.commit()
             return redirect(url_for("tiradores"))
         except sqlite3.IntegrityError:
-            return render_template("tirador_form.html",
-                categorias=CATEGORIAS, error="El DNI ya existe.", t=t)
-    return render_template("tirador_form.html", categorias=CATEGORIAS, error=None, t=t)
+            return render_template("tirador_form.html", error="El DNI ya existe.", t=t)
+    return render_template("tirador_form.html", error=None, t=t)
 
 @app.route("/tiradores/<int:tid>/eliminar", methods=["POST"])
 @role_required("admin","encargado")
@@ -439,8 +433,8 @@ def competicion_ver(cid):
         return redirect(url_for("competiciones"))
 
     insc_rows = db.execute("""
-        SELECT i.id, i.puesto, i.pagado,
-               t.id as tid, t.nombre, t.apellidos, t.dni, t.licencia, t.club, t.categoria
+        SELECT i.id, i.puesto, i.pagado, i.categoria,
+               t.id as tid, t.nombre, t.apellidos, t.dni, t.licencia, t.club
         FROM inscripciones i
         JOIN tiradores t ON t.id = i.tirador_id
         WHERE i.competicion_id = ?
@@ -480,8 +474,8 @@ def competicion_imprimir(cid):
         return redirect(url_for("competiciones"))
 
     insc_rows = db.execute("""
-        SELECT i.id, i.puesto, i.pagado, i.ocultar_categoria,
-               t.id as tid, t.nombre, t.apellidos, t.dni, t.licencia, t.club, t.categoria
+        SELECT i.id, i.puesto, i.pagado, i.ocultar_categoria, i.categoria,
+               t.id as tid, t.nombre, t.apellidos, t.dni, t.licencia, t.club
         FROM inscripciones i
         JOIN tiradores t ON t.id = i.tirador_id
         WHERE i.competicion_id = ?
@@ -516,10 +510,11 @@ def inscribir(cid):
     puesto            = request.form["puesto"]
     pagado            = 1 if request.form.get("pagado") else 0
     ocultar_categoria = 1 if request.form.get("ocultar_categoria") else 0
+    categoria         = request.form.get("categoria", "")
     try:
         db.execute(
-            "INSERT INTO inscripciones (competicion_id,tirador_id,puesto,pagado,ocultar_categoria) VALUES (?,?,?,?,?)",
-            (cid, tid, puesto, pagado, ocultar_categoria))
+            "INSERT INTO inscripciones (competicion_id,tirador_id,puesto,pagado,ocultar_categoria,categoria) VALUES (?,?,?,?,?,?)",
+            (cid, tid, puesto, pagado, ocultar_categoria, categoria))
         db.commit()
     except sqlite3.IntegrityError:
         pass
@@ -544,7 +539,7 @@ def inscripcion_eliminar(iid):
 def puntuaciones(iid):
     db   = get_db()
     insc = db.execute("""
-        SELECT i.*, t.nombre, t.apellidos, t.categoria, t.club,
+        SELECT i.*, t.nombre, t.apellidos, t.club,
                c.nombre as comp_nombre, c.id as cid
         FROM inscripciones i
         JOIN tiradores t ON t.id=i.tirador_id

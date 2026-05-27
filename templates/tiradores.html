@@ -10,13 +10,6 @@
     <label>Buscar</label>
     <input type="text" name="q" value="{{ q }}" placeholder="Nombre, DNI, licencia…">
   </div>
-  <div class="form-group" style="min-width:160px;">
-    <label>Categoría</label>
-    <select name="cat">
-      <option value="">Todas</option>
-      {% for c in categorias %}<option value="{{ c }}" {% if c==cat %}selected{% endif %}>{{ c }}</option>{% endfor %}
-    </select>
-  </div>
   <button type="submit" class="btn btn-negro">Filtrar</button>
   <a href="/tiradores" class="btn btn-outline">Limpiar</a>
   <a href="/tiradores/nuevo" class="btn btn-naranja" style="margin-left:auto;">＋ Nuevo tirador</a>
@@ -29,7 +22,6 @@
       <th>DNI</th>
       <th>Licencia</th>
       <th>Club</th>
-      <th>Categoría</th>
       <th>Acciones</th>
     </tr></thead>
     <tbody>
@@ -39,9 +31,6 @@
       <td style="font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;">{{ t.dni }}</td>
       <td class="num">{{ t.licencia or '—' }}</td>
       <td>{{ t.club or '—' }}</td>
-      <td>
-        <span class="badge badge-{{ t.categoria|lower }}">{{ t.categoria }}</span>
-      </td>
       <td>
         <div style="display:flex;gap:6px;">
           <a href="/tiradores/{{ t.id }}/editar" class="btn btn-outline btn-sm">Editar</a>
@@ -53,7 +42,7 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" style="text-align:center;color:var(--gris);padding:28px;">
+    <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:28px;">
       No se encontraron tiradores.
     </td></tr>
     {% endfor %}

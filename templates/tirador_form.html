@@ -33,14 +33,6 @@
         <label>Club</label>
         <input type="text" name="club" value="{{ t.club if t else '' }}" placeholder="Club deportivo">
       </div>
-      <div class="form-group">
-        <label>Categoría *</label>
-        <select name="categoria" required>
-          {% for c in categorias %}
-          <option value="{{ c }}" {{ 'selected' if t and t.categoria==c }}>{{ c }}</option>
-          {% endfor %}
-        </select>
-      </div>
     </div>
     <div class="form-actions">
       <button type="submit" class="btn btn-naranja">

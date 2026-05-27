@@ -29,7 +29,16 @@
           <select id="sel-tirador-insc" name="tirador_id" required>
             <option value="">— Seleccionar —</option>
             {% for t in disponibles %}
-            <option value="{{ t.id }}">{{ t.apellidos }}, {{ t.nombre }} ({{ t.categoria }})</option>
+            <option value="{{ t.id }}">{{ t.apellidos }}, {{ t.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Categoría *</label>
+          <select name="categoria" required>
+            <option value="">— Seleccionar —</option>
+            {% for c in categorias %}
+            <option value="{{ c }}">{{ c }}</option>
             {% endfor %}
           </select>
         </div>
