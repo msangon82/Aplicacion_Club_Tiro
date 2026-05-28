@@ -8,9 +8,6 @@ build/
 dist/
 *.spec
 
-# Base de datos local
-*.db
-
 # Entornos virtuales
 venv/
 .venv/

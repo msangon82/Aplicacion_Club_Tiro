@@ -77,12 +77,23 @@
           </div>
           <div class="form-group">
             <label>Tirador (opcional)</label>
-            <select id="sel-tirador-salida" name="tirador_id">
-              <option value="">— Sin asignar —</option>
+            <input type="text" name="tirador_nombre" list="lista-tiradores"
+                   placeholder="Nombre o escribe uno nuevo…" autocomplete="off">
+            <datalist id="lista-tiradores">
               {% for t in tiradores %}
-              <option value="{{ t.id }}">{{ t.apellidos }}, {{ t.nombre }}</option>
+              <option value="{{ t.apellidos }}, {{ t.nombre }}"></option>
               {% endfor %}
-            </select>
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label>DNI (opcional)</label>
+            <input type="text" name="tirador_dni" list="lista-dnis"
+                   placeholder="DNI o escribe uno nuevo…" autocomplete="off">
+            <datalist id="lista-dnis">
+              {% for t in tiradores %}
+              <option value="{{ t.dni }}">{{ t.apellidos }}, {{ t.nombre }}</option>
+              {% endfor %}
+            </datalist>
           </div>
           <div class="form-group" style="grid-column:1/-1;">
             <label>Notas</label>
@@ -100,6 +111,7 @@
 <!-- ── TABLA DE MOVIMIENTOS ── -->
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
   <p class="pag-etiqueta" style="margin-bottom:0;flex:1;">Historial de movimientos</p>
+  <button type="button" class="btn btn-negro" onclick="document.getElementById('modal-imprimir').style.display='flex'">🖨 Imprimir movimientos</button>
 </div>
 
 <!-- Filtros -->
@@ -136,6 +148,7 @@
         <th>Calibre</th>
         <th style="text-align:center;">Cantidad</th>
         <th>Nombre y Apellidos</th>
+        <th>DNI</th>
         <th>Licencia Federativa</th>
         <th>Notas</th>
         <th></th>
@@ -160,24 +173,42 @@
         {{ '+' if m.tipo=='entrada' else '−' }}{{ m.cantidad }}
       </td>
       <td>
-        {% if m.nombre %}
+        {% if m.tirador_nombre %}
+          <strong>{{ m.tirador_nombre }}</strong>
+        {% elif m.nombre %}
           <strong>{{ m.apellidos }}, {{ m.nombre }}</strong>
         {% else %}
           <span style="color:var(--gris);">—</span>
         {% endif %}
       </td>
+      <td style="font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;">
+        {{ m.tirador_dni or m.dni or '—' }}
+      </td>
       <td class="num">{{ m.licencia or '—' }}</td>
       <td style="font-size:.82rem;color:var(--gris);">{{ m.notas or '—' }}</td>
       <td>
-        <form method="POST" action="/municion/{{ m.id }}/eliminar"
-              onsubmit="return confirm('¿Eliminar este movimiento? El stock se ajustará automáticamente.')">
-          <button type="submit" class="btn btn-rojo btn-sm">✕</button>
-        </form>
+        {% set ed_nombre = m.tirador_nombre if m.tirador_nombre else ((m.apellidos ~ ', ' ~ m.nombre) if m.nombre else '') %}
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn btn-outline btn-sm btn-editar"
+            data-id="{{ m.id }}"
+            data-fecha="{{ m.fecha }}"
+            data-calibre="{{ m.calibre }}"
+            data-cantidad="{{ m.cantidad }}"
+            data-tirador="{{ ed_nombre }}"
+            data-dni="{{ m.tirador_dni or m.dni or '' }}"
+            data-notas="{{ m.notas or '' }}">
+            Editar
+          </button>
+          <form method="POST" action="/municion/{{ m.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar este movimiento? El stock se ajustará automáticamente.')">
+            <button type="submit" class="btn btn-rojo btn-sm">✕</button>
+          </form>
+        </div>
       </td>
     </tr>
     {% else %}
     <tr>
-      <td colspan="8" style="text-align:center;color:var(--gris);padding:28px;">
+      <td colspan="9" style="text-align:center;color:var(--gris);padding:28px;">
         No hay movimientos registrados.
       </td>
     </tr>
@@ -186,6 +217,82 @@
   </table>
 </div>
 <p style="color:var(--gris);font-size:.8rem;margin-top:8px;">{{ movimientos|length }} movimiento(s) mostrado(s)</p>
+
+<!-- Modal imprimir movimientos -->
+<div id="modal-imprimir" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--blanco);width:100%;max-width:380px;padding:28px;position:relative;">
+    <button onclick="document.getElementById('modal-imprimir').style.display='none'"
+            style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--gris);">✕</button>
+    <p class="pag-etiqueta" style="margin-bottom:6px;">Munición</p>
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px;">Imprimir movimientos</h2>
+    <form method="GET" action="/municion/imprimir" target="_blank">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Mes</label>
+          <select name="mes" required>
+            <option value="1">Enero</option><option value="2">Febrero</option>
+            <option value="3">Marzo</option><option value="4">Abril</option>
+            <option value="5">Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option>
+            <option value="9">Septiembre</option><option value="10">Octubre</option>
+            <option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Año</label>
+          <input type="number" name="anio" required min="2020" max="2099" value="{{ now_year }}">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button type="submit" class="btn btn-naranja">Ver e imprimir</button>
+        <button type="button" onclick="document.getElementById('modal-imprimir').style.display='none'" class="btn btn-outline">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal editar movimiento -->
+<div id="modal-editar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--blanco);width:100%;max-width:520px;padding:28px;position:relative;">
+    <button onclick="cerrarEditar()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--gris);">✕</button>
+    <p class="pag-etiqueta" style="margin-bottom:6px;">Movimiento</p>
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:20px;">Editar movimiento</h2>
+    <form id="form-editar" method="POST">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" name="fecha" id="ed-fecha" required>
+        </div>
+        <div class="form-group">
+          <label>Calibre *</label>
+          <select name="calibre" id="ed-calibre" required>
+            {% for c in calibres %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cantidad *</label>
+          <input type="number" name="cantidad" id="ed-cantidad" required min="1">
+        </div>
+        <div class="form-group">
+          <label>Tirador</label>
+          <input type="text" name="tirador_nombre" id="ed-tirador" list="lista-tiradores" autocomplete="off" placeholder="Nombre o escribe uno nuevo…">
+        </div>
+        <div class="form-group">
+          <label>DNI</label>
+          <input type="text" name="tirador_dni" id="ed-dni" list="lista-dnis" autocomplete="off" placeholder="DNI o escribe uno nuevo…">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notas</label>
+          <input type="text" name="notas" id="ed-notas" placeholder="Observaciones…">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button type="submit" class="btn btn-naranja">Guardar cambios</button>
+        <button type="button" onclick="cerrarEditar()" class="btn btn-outline">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 {% endblock %}
 
@@ -202,11 +309,28 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  var el = document.getElementById('sel-tirador-salida');
-  if(el) new TomSelect(el, {placeholder:'— Sin asignar —', allowEmptyOption:true});
+document.querySelectorAll('.btn-editar').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var d = this.dataset;
+    document.getElementById('form-editar').action = '/municion/' + d.id + '/editar';
+    document.getElementById('ed-fecha').value    = d.fecha;
+    document.getElementById('ed-cantidad').value = d.cantidad;
+    document.getElementById('ed-tirador').value  = d.tirador;
+    document.getElementById('ed-dni').value      = d.dni;
+    document.getElementById('ed-notas').value    = d.notas;
+    var sel = document.getElementById('ed-calibre');
+    for (var i = 0; i < sel.options.length; i++) {
+      sel.options[i].selected = (sel.options[i].value === d.calibre);
+    }
+    document.getElementById('modal-editar').style.display = 'flex';
+  });
+});
+function cerrarEditar() {
+  document.getElementById('modal-editar').style.display = 'none';
+}
+document.getElementById('modal-editar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarEditar();
 });
 </script>
 {% endblock %}

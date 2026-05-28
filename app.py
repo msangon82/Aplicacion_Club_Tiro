@@ -139,6 +139,16 @@ def init_db():
         for sql in [
             "ALTER TABLE inscripciones ADD COLUMN ocultar_categoria INTEGER DEFAULT 0",
             "ALTER TABLE inscripciones ADD COLUMN categoria TEXT DEFAULT ''",
+            "ALTER TABLE municion_movimientos ADD COLUMN tirador_nombre TEXT",
+            "ALTER TABLE municion_movimientos ADD COLUMN tirador_dni TEXT",
+            "ALTER TABLE puntuaciones ADD COLUMN d6  REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d7  REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d8  REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d9  REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d10 REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d11 REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d12 REAL DEFAULT 0",
+            "ALTER TABLE puntuaciones ADD COLUMN d13 REAL DEFAULT 0",
         ]:
             try:
                 db.execute(sql)
@@ -181,11 +191,46 @@ def init_db():
 # ─────────────────────────────────────────
 #  HELPERS
 # ─────────────────────────────────────────
-CATEGORIAS = ["Primera", "Segunda", "Tercera", "Veteranos", "Junior", "Femenino"]
+CATEGORIAS  = ["Dama", "Junior", "Primera", "Segunda", "Tercera", "Veterano", "Veterano Senior", "Veterano Master"]
+MODALIDADES = [
+    "Pistola Standard", "Fuego Central", "Pistola Libre", "Pistola 9MM",
+    "Pistola A/C", "Carabina A/C", "Carabina Ligera", "Carabina Match",
+    "RimfireProducción", "Mini F Class OPEN", "Mini F Class Restricted",
+    "BR50", "Piñal", "Avancarga",
+]
 CALIBRES   = [".32 S&W", "9 PB", ".38 SPL", ".22lr"]
-SERIES_150 = [1, 2, 3, 4]
-SERIES_20  = [5, 6, 7, 8, 9, 10]
 ROLES      = ["admin", "encargado", "arbitro", "directiva", "tirador"]
+
+MODALIDAD_CONFIG = {
+    "Pistola Standard":        {"series": 12, "disparos": 5, "grupos": [
+        {"series": list(range(1, 5)),  "label": '150"'},
+        {"series": list(range(5, 9)),  "label": '20"'},
+        {"series": list(range(9, 13)), "label": '10"'},
+    ]},
+    "Fuego Central":           {"series": 12, "disparos": 5, "grupos": [
+        {"series": list(range(1, 7)),  "label": '150"'},
+        {"series": list(range(7, 13)), "label": '20"'},
+    ]},
+    "Pistola 9MM":             {"series": 12, "disparos": 5, "grupos": [
+        {"series": list(range(1, 7)),  "label": '150"'},
+        {"series": list(range(7, 13)), "label": '20"'},
+    ]},
+    "Pistola Libre":           {"series": 12, "disparos": 5},
+    "Pistola A/C":             {"series": 12, "disparos": 5},
+    "Carabina A/C":            {"series": 12, "disparos": 5},
+    "Carabina Ligera":         {"series": 12, "disparos": 5},
+    "Carabina Match":          {"series": 12, "disparos": 5},
+    "Mini F Class OPEN":       {"series": 10, "disparos": 6},
+    "Mini F Class Restricted": {"series": 10, "disparos": 6},
+    "RimfireProducción":       {"series": 10, "disparos": 6},
+    "BR50":                    {"series": 10, "disparos": 5},
+    "Piñal":                   {"series": 6,  "disparos": 13, "top": 10},
+    "Avancarga":               {"series": 6,  "disparos": 13, "top": 10},
+}
+DEFAULT_CONFIG = {"series": 10, "disparos": 5}
+
+def get_modalidad_config(modalidad):
+    return MODALIDAD_CONFIG.get(modalidad or "", DEFAULT_CONFIG)
 
 ROL_LABELS = {
     "admin":     "Administrador",
@@ -195,20 +240,27 @@ ROL_LABELS = {
     "tirador":   "Tirador",
 }
 
-def calcular_suma_serie(d1, d2, d3, d4, d5):
-    total = 0
-    for v in [d1, d2, d3, d4, d5]:
+def calcular_suma_serie_vals(valores, top=None):
+    nums = []
+    for v in valores:
+        if v is None: continue
         try:
-            total += float(v) if str(v).lower() != 'x' else 10
-        except:
-            pass
-    return total
+            nums.append(10.0 if str(v).strip().lower() == 'x' else float(v))
+        except: pass
+    if top and len(nums) > top:
+        nums = sorted(nums, reverse=True)[:top]
+    return sum(nums)
 
-def calcular_total_inscripcion(insc_id, db):
-    filas = db.execute(
-        "SELECT d1,d2,d3,d4,d5 FROM puntuaciones WHERE inscripcion_id=?", (insc_id,)
-    ).fetchall()
-    return sum(calcular_suma_serie(r["d1"],r["d2"],r["d3"],r["d4"],r["d5"]) for r in filas)
+def calcular_suma_serie(d1, d2, d3, d4, d5):
+    return calcular_suma_serie_vals([d1, d2, d3, d4, d5])
+
+def calcular_total_inscripcion(insc_id, db, modalidad=None):
+    config = get_modalidad_config(modalidad)
+    n_disp = config.get("disparos", 5)
+    top    = config.get("top")
+    cols   = ", ".join(f"d{i}" for i in range(1, n_disp + 1))
+    filas  = db.execute(f"SELECT {cols} FROM puntuaciones WHERE inscripcion_id=?", (insc_id,)).fetchall()
+    return sum(calcular_suma_serie_vals([r[f"d{i}"] for i in range(1, n_disp + 1)], top) for r in filas)
 
 def get_stocks(db):
     rows = db.execute("SELECT calibre, stock FROM municion_stock ORDER BY calibre").fetchall()
@@ -422,7 +474,7 @@ def competicion_nueva():
             (request.form["nombre"], request.form["fecha"], request.form["modalidad"]))
         db.commit()
         return redirect(url_for("competiciones"))
-    return render_template("competicion_form.html", c=None)
+    return render_template("competicion_form.html", c=None, modalidades=MODALIDADES)
 
 @app.route("/competiciones/<int:cid>")
 @login_required
@@ -443,7 +495,7 @@ def competicion_ver(cid):
 
     inscripciones = []
     for row in insc_rows:
-        total = calcular_total_inscripcion(row["id"], db)
+        total = calcular_total_inscripcion(row["id"], db, comp["modalidad"])
         inscripciones.append(dict(row) | {"total": total})
 
     clasificacion = sorted([i for i in inscripciones if i["total"] > 0],
@@ -484,7 +536,7 @@ def competicion_imprimir(cid):
 
     inscripciones = []
     for row in insc_rows:
-        total = calcular_total_inscripcion(row["id"], db)
+        total = calcular_total_inscripcion(row["id"], db, comp["modalidad"])
         inscripciones.append(dict(row) | {"total": total})
 
     visibles = [i for i in inscripciones if not i["ocultar_categoria"]]
@@ -540,7 +592,7 @@ def puntuaciones(iid):
     db   = get_db()
     insc = db.execute("""
         SELECT i.*, t.nombre, t.apellidos, t.club,
-               c.nombre as comp_nombre, c.id as cid
+               c.nombre as comp_nombre, c.id as cid, c.modalidad as modalidad
         FROM inscripciones i
         JOIN tiradores t ON t.id=i.tirador_id
         JOIN competiciones c ON c.id=i.competicion_id
@@ -556,17 +608,30 @@ def puntuaciones(iid):
 
     can_edit = current_user.rol in ("admin", "encargado", "arbitro")
 
+    config   = get_modalidad_config(insc["modalidad"])
+    n_series = config["series"]
+    n_disp   = config["disparos"]
+    top      = config.get("top")
+    grupos   = config.get("grupos", [])
+
+    # Mapa serie → etiqueta de tiempo
+    serie_tiempos = {}
+    for g in grupos:
+        for s in g["series"]:
+            serie_tiempos[s] = g["label"]
+
     if request.method == "POST":
         if not can_edit:
             return render_template("403.html"), 403
-        for serie in range(1, 11):
-            d = [request.form.get(f"s{serie}_d{j}", 0) for j in range(1,6)]
-            db.execute("""
-                INSERT INTO puntuaciones (inscripcion_id,serie,d1,d2,d3,d4,d5)
-                VALUES (?,?,?,?,?,?,?)
-                ON CONFLICT(inscripcion_id,serie) DO UPDATE SET
-                  d1=excluded.d1, d2=excluded.d2, d3=excluded.d3,
-                  d4=excluded.d4, d5=excluded.d5
+        cols  = ", ".join(f"d{i}" for i in range(1, n_disp + 1))
+        ph    = ", ".join("?" * n_disp)
+        upd   = ", ".join(f"d{i}=excluded.d{i}" for i in range(1, n_disp + 1))
+        for serie in range(1, n_series + 1):
+            d = [request.form.get(f"s{serie}_d{j}", 0) for j in range(1, n_disp + 1)]
+            db.execute(f"""
+                INSERT INTO puntuaciones (inscripcion_id, serie, {cols})
+                VALUES (?, ?, {ph})
+                ON CONFLICT(inscripcion_id, serie) DO UPDATE SET {upd}
             """, [iid, serie] + d)
         db.commit()
         return redirect(url_for("competicion_ver", cid=insc["cid"]))
@@ -574,11 +639,12 @@ def puntuaciones(iid):
     series = {}
     for row in db.execute("SELECT * FROM puntuaciones WHERE inscripcion_id=? ORDER BY serie", (iid,)):
         series[row["serie"]] = row
-    total = calcular_total_inscripcion(iid, db)
+    total = calcular_total_inscripcion(iid, db, insc["modalidad"])
 
     return render_template("puntuaciones.html",
         insc=insc, series=series, total=total,
-        series_150=SERIES_150, series_20=SERIES_20,
+        config=config, n_series=n_series, n_disp=n_disp,
+        top=top, grupos=grupos, serie_tiempos=serie_tiempos,
         can_edit=can_edit)
 
 @app.route("/api/puntuacion", methods=["POST"])
@@ -591,17 +657,35 @@ def api_puntuacion():
     serie = data["serie"]
     campo = data["campo"]
     valor = data["valor"]
-    db    = get_db()
+
+    ALLOWED = {f"d{i}" for i in range(1, 14)}
+    if campo not in ALLOWED:
+        return jsonify({"ok": False, "error": "Campo inválido"}), 400
+
+    db = get_db()
     db.execute(f"""
-        INSERT INTO puntuaciones (inscripcion_id,serie,{campo})
-        VALUES (?,?,?)
-        ON CONFLICT(inscripcion_id,serie) DO UPDATE SET {campo}=excluded.{campo}
+        INSERT INTO puntuaciones (inscripcion_id, serie, {campo})
+        VALUES (?, ?, ?)
+        ON CONFLICT(inscripcion_id, serie) DO UPDATE SET {campo}=excluded.{campo}
     """, (iid, serie, valor))
     db.commit()
-    total      = calcular_total_inscripcion(iid, db)
-    row        = db.execute("SELECT d1,d2,d3,d4,d5 FROM puntuaciones WHERE inscripcion_id=? AND serie=?",
-                            (iid, serie)).fetchone()
-    suma_serie = calcular_suma_serie(*row) if row else 0
+
+    insc_row = db.execute("""
+        SELECT c.modalidad FROM inscripciones i
+        JOIN competiciones c ON c.id = i.competicion_id
+        WHERE i.id=?
+    """, (iid,)).fetchone()
+    modalidad = insc_row["modalidad"] if insc_row else None
+    config    = get_modalidad_config(modalidad)
+    n_disp    = config.get("disparos", 5)
+    top       = config.get("top")
+
+    cols = ", ".join(f"d{i}" for i in range(1, n_disp + 1))
+    row  = db.execute(f"SELECT {cols} FROM puntuaciones WHERE inscripcion_id=? AND serie=?",
+                      (iid, serie)).fetchone()
+    vals       = [row[f"d{i}"] for i in range(1, n_disp + 1)] if row else []
+    suma_serie = calcular_suma_serie_vals(vals, top)
+    total      = calcular_total_inscripcion(iid, db, modalidad)
     return jsonify({"ok": True, "total": total, "suma_serie": suma_serie})
 
 # ─────────────────────────────────────────
@@ -624,8 +708,8 @@ def municion():
     """
     params = []
     if q:
-        query += " AND (t.nombre LIKE ? OR t.apellidos LIKE ? OR t.licencia LIKE ?)"
-        params += [f"%{q}%"]*3
+        query += " AND (m.tirador_nombre LIKE ? OR m.tirador_dni LIKE ? OR t.nombre LIKE ? OR t.apellidos LIKE ? OR t.licencia LIKE ?)"
+        params += [f"%{q}%"]*5
     if calibre_f:
         query += " AND m.calibre=?"
         params.append(calibre_f)
@@ -641,7 +725,42 @@ def municion():
     return render_template("municion.html", today=today,
         stocks=stocks, movimientos=movimientos,
         tiradores=tiradores, calibres=CALIBRES,
-        q=q, calibre_f=calibre_f, tipo_f=tipo_f)
+        q=q, calibre_f=calibre_f, tipo_f=tipo_f,
+        now_year=date.today().year)
+
+@app.route("/municion/imprimir")
+@role_required("admin","encargado","directiva")
+def municion_imprimir():
+    db   = get_db()
+    mes  = request.args.get("mes", "")
+    anio = request.args.get("anio", "")
+    if not mes or not anio:
+        return redirect(url_for("municion"))
+
+    prefijo = f"{anio}-{int(mes):02d}"
+    nombre_mes = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][int(mes)-1]
+
+    movimientos = db.execute("""
+        SELECT m.*, t.nombre, t.apellidos, t.licencia, t.dni
+        FROM municion_movimientos m
+        LEFT JOIN tiradores t ON t.id = m.tirador_id
+        WHERE m.fecha LIKE ?
+        ORDER BY m.fecha ASC, m.id ASC
+    """, (f"{prefijo}%",)).fetchall()
+
+    salidas = db.execute("""
+        SELECT m.*, t.nombre, t.apellidos, t.licencia, t.dni
+        FROM municion_movimientos m
+        LEFT JOIN tiradores t ON t.id = m.tirador_id
+        WHERE m.fecha LIKE ? AND m.tipo = 'salida'
+        ORDER BY m.calibre ASC, m.fecha ASC
+    """, (f"{prefijo}%",)).fetchall()
+
+    now = datetime.now().strftime('%d/%m/%Y %H:%M')
+    return render_template("municion_imprimir.html",
+        movimientos=movimientos, salidas=salidas,
+        mes=nombre_mes, anio=anio, now=now)
 
 @app.route("/municion/entrada", methods=["POST"])
 @role_required("admin","encargado")
@@ -667,18 +786,58 @@ def municion_salida():
     calibre    = request.form["calibre"]
     cantidad   = int(request.form["cantidad"])
     fecha      = request.form["fecha"]
-    tirador_id = request.form.get("tirador_id") or None
-    notas      = request.form.get("notas","")
-    stock_row  = db.execute("SELECT stock FROM municion_stock WHERE calibre=?", (calibre,)).fetchone()
-    stock_actual = stock_row["stock"] if stock_row else 0
+    tirador_nombre = request.form.get("tirador_nombre","").strip() or None
+    tirador_dni    = request.form.get("tirador_dni","").strip().upper() or None
+    notas          = request.form.get("notas","")
+    stock_row      = db.execute("SELECT stock FROM municion_stock WHERE calibre=?", (calibre,)).fetchone()
+    stock_actual   = stock_row["stock"] if stock_row else 0
     if cantidad > stock_actual:
         return redirect(url_for("municion") + "?error=stock")
     db.execute(
-        "INSERT INTO municion_movimientos (fecha,tipo,calibre,cantidad,tirador_id,notas) VALUES (?,?,?,?,?,?)",
-        (fecha, "salida", calibre, cantidad, tirador_id, notas))
+        "INSERT INTO municion_movimientos (fecha,tipo,calibre,cantidad,tirador_nombre,tirador_dni,notas) VALUES (?,?,?,?,?,?,?)",
+        (fecha, "salida", calibre, cantidad, tirador_nombre, tirador_dni, notas))
     db.execute(
         "UPDATE municion_stock SET stock = stock - ? WHERE calibre=?",
         (cantidad, calibre))
+    db.commit()
+    return redirect(url_for("municion"))
+
+@app.route("/municion/<int:mid>/editar", methods=["POST"])
+@role_required("admin","encargado")
+def municion_editar(mid):
+    db  = get_db()
+    mov = db.execute("SELECT * FROM municion_movimientos WHERE id=?", (mid,)).fetchone()
+    if not mov:
+        return redirect(url_for("municion"))
+
+    nueva_cantidad     = int(request.form["cantidad"])
+    nuevo_calibre      = request.form["calibre"]
+    nueva_fecha        = request.form["fecha"]
+    nuevo_tirador_nombre = request.form.get("tirador_nombre","").strip() or None
+    nuevo_tirador_dni    = request.form.get("tirador_dni","").strip().upper() or None
+    nuevas_notas       = request.form.get("notas","")
+
+    # Revertir efecto en stock del movimiento original
+    if mov["tipo"] == "entrada":
+        db.execute("UPDATE municion_stock SET stock = stock - ? WHERE calibre=?",
+                   (mov["cantidad"], mov["calibre"]))
+    else:
+        db.execute("UPDATE municion_stock SET stock = stock + ? WHERE calibre=?",
+                   (mov["cantidad"], mov["calibre"]))
+
+    # Aplicar nuevo efecto en stock
+    if mov["tipo"] == "entrada":
+        db.execute("UPDATE municion_stock SET stock = stock + ? WHERE calibre=?",
+                   (nueva_cantidad, nuevo_calibre))
+    else:
+        db.execute("UPDATE municion_stock SET stock = stock - ? WHERE calibre=?",
+                   (nueva_cantidad, nuevo_calibre))
+
+    db.execute("""UPDATE municion_movimientos
+                  SET fecha=?, calibre=?, cantidad=?, tirador_nombre=?, tirador_dni=?, notas=?
+                  WHERE id=?""",
+               (nueva_fecha, nuevo_calibre, nueva_cantidad,
+                nuevo_tirador_nombre, nuevo_tirador_dni, nuevas_notas, mid))
     db.commit()
     return redirect(url_for("municion"))
 

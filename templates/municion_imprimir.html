@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Munición {{ mes }} {{ anio }} · CTO Cartagena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --negro: #0d0d0d; --naranja: #e85d04; --naranja-claro: #ff7c35;
+    --verde: #2d6a2d; --rojo: #c0392b; --crema: #faf8f5;
+    --gris: #666; --gris-claro: #ddd; --blanco: #fff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Barlow',sans-serif; background:var(--blanco); color:var(--negro); font-weight:300; font-size:10.5pt; line-height:1.5; }
+
+  body::before {
+    content:''; background-image:url('/static/escudo.png');
+    background-repeat:no-repeat; background-position:center; background-size:45%;
+    opacity:0.04; position:fixed; top:0;left:0;right:0;bottom:0; pointer-events:none; z-index:0;
+  }
+
+  .pagina { position:relative; z-index:1; max-width:960px; margin:0 auto; padding:24px 32px; }
+
+  .cabecera { display:flex; align-items:center; gap:20px; border-bottom:3px solid var(--naranja); padding-bottom:16px; margin-bottom:20px; }
+  .cabecera img { width:66px; height:66px; border-radius:50%; border:2px solid var(--naranja); }
+  .cab-club { font-family:'Playfair Display',serif; font-size:14pt; font-weight:900; color:var(--negro); line-height:1.1; }
+  .cab-club span { color:var(--naranja); }
+  .cab-sub { font-family:'Barlow Condensed',sans-serif; font-size:7pt; letter-spacing:.3em; text-transform:uppercase; color:var(--gris); margin-top:3px; }
+  .cab-der { margin-left:auto; text-align:right; }
+  .cab-der .periodo { font-family:'Barlow Condensed',sans-serif; font-size:11pt; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+  .cab-der .meta { font-size:8pt; color:var(--gris); margin-top:2px; }
+
+  .seccion-titulo {
+    font-family:'Barlow Condensed',sans-serif; font-size:8pt; letter-spacing:.35em;
+    text-transform:uppercase; color:var(--naranja); margin:22px 0 8px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .seccion-titulo::after { content:''; flex:1; height:1px; background:var(--gris-claro); }
+
+  table { width:100%; border-collapse:collapse; margin-bottom:16px; font-size:9pt; }
+  thead tr { background:var(--negro); }
+  thead th { padding:7px 9px; font-family:'Barlow Condensed',sans-serif; font-size:7.5pt; letter-spacing:.15em; text-transform:uppercase; color:var(--naranja-claro); text-align:left; font-weight:600; }
+  tbody tr { border-bottom:1px solid var(--gris-claro); }
+  tbody tr:nth-child(even) { background:var(--crema); }
+  tbody td { padding:6px 9px; vertical-align:middle; }
+  td.num { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10pt; }
+  td.c { text-align:center; }
+
+  .badge-entrada { background:var(--verde); color:#fff; padding:2px 8px; font-family:'Barlow Condensed',sans-serif; font-size:7.5pt; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .badge-salida  { background:var(--rojo);  color:#fff; padding:2px 8px; font-family:'Barlow Condensed',sans-serif; font-size:7.5pt; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .cant-entrada { color:var(--verde); font-weight:700; }
+  .cant-salida  { color:var(--rojo);  font-weight:700; }
+
+  .calibre-grupo th { background:#1a1a1a; color:var(--naranja-claro); font-family:'Barlow Condensed',sans-serif; letter-spacing:.2em; font-size:8pt; padding:6px 9px; }
+
+  .resumen-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
+  .resumen-pill { border:1px solid var(--gris-claro); padding:10px 14px; }
+  .resumen-pill .cal { font-family:'Barlow Condensed',sans-serif; font-size:8pt; letter-spacing:.15em; text-transform:uppercase; color:var(--gris); }
+  .resumen-pill .vals { display:flex; gap:16px; margin-top:4px; }
+  .resumen-pill .v { font-family:'Barlow Condensed',sans-serif; font-size:13pt; font-weight:700; }
+  .resumen-pill .lbl { font-size:7.5pt; color:var(--gris); }
+
+  .pie { margin-top:28px; border-top:1px solid var(--gris-claro); padding-top:10px; display:flex; justify-content:space-between; font-size:7.5pt; color:var(--gris); }
+  .pie span { color:var(--naranja); }
+
+  .acciones { display:flex; gap:12px; margin-bottom:20px; }
+  .btn-imprimir { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:var(--naranja); color:#fff; font-family:'Barlow Condensed',sans-serif; font-size:.85rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; border:none; cursor:pointer; }
+  .btn-volver { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; background:transparent; color:var(--naranja); font-family:'Barlow Condensed',sans-serif; font-size:.85rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; border:1px solid var(--naranja); cursor:pointer; text-decoration:none; }
+
+  @media print {
+    body::before { opacity:0.03; }
+    .acciones { display:none !important; }
+    .pagina { padding:0; max-width:100%; }
+    @page { margin:14mm 10mm; size:A4 portrait; }
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <div class="acciones">
+    <button class="btn-imprimir" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+    <a href="/municion" class="btn-volver">← Volver</a>
+  </div>
+
+  <!-- Cabecera -->
+  <div class="cabecera">
+    <img src="/static/escudo.png" alt="Escudo CTO Cartagena">
+    <div>
+      <div class="cab-club">Club de Tiro <span>Olímpico</span> de Cartagena</div>
+      <div class="cab-sub">Fundado en 1901 · Precisión · Disciplina · Tradición</div>
+    </div>
+    <div class="cab-der">
+      <div class="periodo">Control de Munición</div>
+      <div class="meta">{{ mes }} {{ anio }}</div>
+    </div>
+  </div>
+
+  <!-- ── TODOS LOS MOVIMIENTOS ── -->
+  <p class="seccion-titulo">Todos los movimientos · {{ mes }} {{ anio }}</p>
+
+  {% if movimientos %}
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Calibre</th>
+        <th class="c">Cantidad</th>
+        <th>Tirador</th>
+        <th>DNI</th>
+        <th>Notas</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in movimientos %}
+    <tr>
+      <td style="white-space:nowrap;font-family:'Barlow Condensed',sans-serif;">{{ m.fecha }}</td>
+      <td><span class="badge-{{ m.tipo }}">{{ '↑ Entrada' if m.tipo=='entrada' else '↓ Salida' }}</span></td>
+      <td class="num">{{ m.calibre }}</td>
+      <td class="c num {{ 'cant-entrada' if m.tipo=='entrada' else 'cant-salida' }}">
+        {{ '+' if m.tipo=='entrada' else '−' }}{{ m.cantidad }}
+      </td>
+      <td>
+        {% if m.tirador_nombre %}{{ m.tirador_nombre }}
+        {% elif m.nombre %}{{ m.apellidos }}, {{ m.nombre }}
+        {% else %}—{% endif %}
+      </td>
+      <td style="font-family:'Barlow Condensed',sans-serif;">{{ m.tirador_dni or m.dni or '—' }}</td>
+      <td style="color:var(--gris);font-size:8.5pt;">{{ m.notas or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:var(--gris);margin-bottom:20px;">No hay movimientos en este período.</p>
+  {% endif %}
+
+  <!-- ── SALIDAS POR CALIBRE ── -->
+  <p class="seccion-titulo">Salidas por calibre · {{ mes }} {{ anio }}</p>
+
+  {% if salidas %}
+  {% set calibres_vistos = [] %}
+  <table>
+    <thead>
+      <tr>
+        <th>Calibre</th>
+        <th>Fecha</th>
+        <th class="c">Cantidad</th>
+        <th>Tirador</th>
+        <th>DNI</th>
+        <th>Notas</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% set calibre_actual = namespace(val='') %}
+    {% for m in salidas %}
+      {% if m.calibre != calibre_actual.val %}
+        {% set calibre_actual.val = m.calibre %}
+        <tr class="calibre-grupo"><th colspan="6">{{ m.calibre }}</th></tr>
+      {% endif %}
+      <tr>
+        <td></td>
+        <td style="white-space:nowrap;font-family:'Barlow Condensed',sans-serif;">{{ m.fecha }}</td>
+        <td class="c num cant-salida">−{{ m.cantidad }}</td>
+        <td>
+          {% if m.tirador_nombre %}{{ m.tirador_nombre }}
+          {% elif m.nombre %}{{ m.apellidos }}, {{ m.nombre }}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-family:'Barlow Condensed',sans-serif;">{{ m.tirador_dni or m.dni or '—' }}</td>
+        <td style="color:var(--gris);font-size:8.5pt;">{{ m.notas or '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:var(--gris);margin-bottom:20px;">No hay salidas en este período.</p>
+  {% endif %}
+
+  <!-- Pie -->
+  <div class="pie">
+    <span>Club de Tiro <span>Olímpico</span> de Cartagena · Fundado en 1901</span>
+    <span>Documento generado el {{ now }}</span>
+  </div>
+
+</div>
+</body>
+</html>

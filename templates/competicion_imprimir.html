@@ -144,12 +144,14 @@
     font-size: 8pt; font-weight: 700; letter-spacing: .12em;
     text-transform: uppercase; padding: 2px 8px;
   }
-  .badge-primera  { background: #1a3a5c; color: #fff; }
-  .badge-segunda  { background: #2d5016; color: #fff; }
-  .badge-tercera  { background: #5c3a1a; color: #fff; }
-  .badge-veteranos{ background: #4a1a5c; color: #fff; }
-  .badge-junior   { background: #1a4a4a; color: #fff; }
-  .badge-femenino { background: #5c1a3a; color: #fff; }
+  .badge-dama           { background: #5c1a3a; color: #fff; }
+  .badge-junior         { background: #1a4a4a; color: #fff; }
+  .badge-primera        { background: #1a3a5c; color: #fff; }
+  .badge-segunda        { background: #2d5016; color: #fff; }
+  .badge-tercera        { background: #5c3a1a; color: #fff; }
+  .badge-veterano       { background: #4a1a5c; color: #fff; }
+  .badge-veterano-senior{ background: #6b2d7a; color: #fff; }
+  .badge-veterano-master{ background: #8b0000; color: #fff; }
   .cat-bloque table { margin-bottom: 0; }
   .cat-bloque thead th { font-size: 7.5pt; padding: 6px 8px; }
   .cat-bloque tbody td { font-size: 8.5pt; padding: 6px 8px; }
@@ -247,7 +249,7 @@
         </span>
       </td>
       <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
-      <td><span class="cat-badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td><span class="cat-badge badge-{{ i.categoria|lower|replace(' ', '-') }}">{{ i.categoria }}</span></td>
       <td>{{ i.club }}</td>
       <td class="total">{{ i.total }}</td>
     </tr>
@@ -265,7 +267,7 @@
     {% for cat, lista in por_cat.items() %}
     <div class="cat-bloque">
       <div class="cat-header">
-        <span class="cat-badge badge-{{ cat|lower }}">{{ cat }}</span>
+        <span class="cat-badge badge-{{ cat|lower|replace(' ', '-') }}">{{ cat }}</span>
       </div>
       <table>
         <thead>

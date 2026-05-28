@@ -20,9 +20,7 @@
       <div class="form-group">
         <label>Modalidad</label>
         <select name="modalidad">
-          {% set mods = ['Pistola Standard','Fuego Central','Pistola Libre','Pistola 9 MM',
-                         'Aire Comprimido','Carabina Ligera','Carabina Match','Mini FClass','Rimfire Producción'] %}
-          {% for m in mods %}
+          {% for m in modalidades %}
           <option value="{{ m }}" {{ 'selected' if c and c.modalidad==m }}>{{ m }}</option>
           {% endfor %}
         </select>

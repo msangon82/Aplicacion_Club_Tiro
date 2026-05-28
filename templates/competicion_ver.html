@@ -86,9 +86,9 @@
       {% if current_user.rol != 'tirador' %}<td style="font-family:'Barlow Condensed',sans-serif;">{{ i.dni }}</td>{% endif %}
       <td class="num">{{ i.licencia or '—' }}</td>
       <td>{{ i.club }}</td>
-      <td><span class="badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td><span class="badge badge-{{ i.categoria|lower|replace(' ', '-') }}">{{ i.categoria }}</span></td>
       <td><span class="badge {{ 'badge-si' if i.pagado else 'badge-no' }}">{{ 'Sí' if i.pagado else 'No' }}</span></td>
-      <td class="num" style="color:var(--naranja);font-size:1.05rem;">{{ i.total if i.total > 0 else '—' }}</td>
+      <td class="num" style="color:var(--naranja);font-size:1.05rem;">{{ "%.2f"|format(i.total) if i.total > 0 else '—' }}</td>
       <td>
         <div style="display:flex;gap:6px;">
           <a href="/puntuaciones/{{ i.id }}" class="btn btn-naranja btn-sm">Puntuaciones</a>
@@ -118,9 +118,9 @@
         </span>
       </td>
       <td><strong>{{ i.apellidos }}, {{ i.nombre }}</strong></td>
-      <td><span class="badge badge-{{ i.categoria|lower }}">{{ i.categoria }}</span></td>
+      <td><span class="badge badge-{{ i.categoria|lower|replace(' ', '-') }}">{{ i.categoria }}</span></td>
       <td>{{ i.club }}</td>
-      <td class="num" style="color:var(--naranja);font-size:1.1rem;">{{ i.total }}</td>
+      <td class="num" style="color:var(--naranja);font-size:1.1rem;">{{ "%.2f"|format(i.total) }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -133,7 +133,7 @@
   {% for cat, lista in por_cat.items() %}
   <div style="border:1px solid var(--gris-claro);">
     <div style="background:var(--negro);padding:10px 14px;">
-      <span class="badge badge-{{ cat|lower }}">{{ cat }}</span>
+      <span class="badge badge-{{ cat|lower|replace(' ', '-') }}">{{ cat }}</span>
     </div>
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr>
@@ -146,7 +146,7 @@
       <tr style="border-bottom:1px solid var(--gris-claro);">
         <td style="padding:8px 10px;font-weight:700;color:var(--gris);">{{ loop.index }}º</td>
         <td style="padding:8px 10px;font-size:.88rem;">{{ i.apellidos }}, {{ i.nombre }}</td>
-        <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--naranja);">{{ i.total }}</td>
+        <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--naranja);">{{ "%.2f"|format(i.total) }}</td>
       </tr>
       {% endfor %}
       </tbody>
